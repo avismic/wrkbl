@@ -1,0 +1,73 @@
+/* src/components/Footer.module.css */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #4baaf3;
+  color: white;
+  padding: 2rem;
+}
+
+.brand {
+  display: flex;
+  align-items: flex-start;
+  margin-left: 2rem;
+}
+
+.address {
+  margin-left: 1rem;
+}
+
+.address h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.address address {
+  margin-top: 0.5rem;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.links {
+  display: flex;
+  gap: 4rem;
+  margin-right: 5rem;
+}
+
+.links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.links li {
+  margin-bottom: 0.5rem;
+}
+
+.links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
+
+/* Collapse to single column on small screens */
+@media (max-width: 600px) {
+  .footer {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .brand {
+    margin-bottom: 2rem;
+  }
+  .links {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}

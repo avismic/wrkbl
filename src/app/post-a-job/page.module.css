@@ -1,0 +1,84 @@
+/* src/app/post-a-job/page.module.css */
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.container h1 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.container .error {
+  color: #e74c3c;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.container .form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* All form controls full width */
+.container .form input,
+.container .form select,
+.container .form button {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+/* Submit button accent */
+.container .form button {
+  background: #4baaf3;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.container .form button:hover {
+  background: #3a8ad1;
+}
+.container .form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Remote checkbox flush left */
+.container .form .checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: start; /* <<< this makes it hug the left */
+  font-size: 0.9rem;
+  margin: 0;
+}
+.container .form .checkbox input {
+  margin: 0;
+}
+
+/* Salary row: two inputs side by side */
+.container .form .salaryRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.container .form .salaryRow input {
+  flex: 1;
+  width: auto; /* let flex handle width */
+}
+
+/* Thank-you message */
+.container .thanks {
+  max-width: 600px;
+  margin: 3rem auto;
+  text-align: center;
+}
+.container .thanks h1 {
+  color: #2a9d8f;
+}

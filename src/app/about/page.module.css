@@ -1,0 +1,38 @@
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.762);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  color: #171717;
+}
+
+.heading {
+  margin-top: 0;
+  font-size: 2rem;
+  text-align: center;
+  color: #004aad;
+}
+
+.content {
+  margin-top: 1rem;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.subheading {
+  margin-top: 1.5rem;
+  font-size: 1.25rem;
+  color: #004aad;
+}
+
+/* .a {
+  color: #4baaf3;
+  text-decoration: none;
+}
+
+.a:hover {
+  text-decoration: underline;
+} */

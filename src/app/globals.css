@@ -1,26 +1,41 @@
-@import "tailwindcss";
+/* src/app/globals.css */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Set the global background to grey */
 :root {
-  --background: #ffffff;
+  --background: #808080;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    /* Keep the same grey in dark mode (or pick a darker grey if you prefer) */
+    --background: #202020;
     --foreground: #ededed;
   }
 }
 
+/* Ensure flex container can fill viewport */
+html,
 body {
-  background: var(--background);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* --- Sticky footer via Flexbox --- */
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.pageContent {
+  flex: 1;
 }
