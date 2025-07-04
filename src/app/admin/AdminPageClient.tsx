@@ -1,7 +1,7 @@
 // src/app/admin/AdminPageClient.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import useSWR from "swr";
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
@@ -12,30 +12,45 @@ interface Job {
   id: string;
   title: string;
   company: string;
-  location: string;
+  city: string;
+  country: string;
+  officeType: "Remote" | "Hybrid" | "In-Office" | "Remote-Anywhere";
+  experienceLevel:
+    | "Intern"
+    | "Entry-level"
+    | "Associate/Mid-level"
+    | "Senior-level"
+    | "Managerial"
+    | "Executive";
+  employmentType:
+    | "Full-time"
+    | "Part-time"
+    | "Contract"
+    | "Temporary"
+    | "Freelance";
+  industry: string;
+  visa: boolean;
+  benefits: string[];
   skills: string[];
   url: string;
   postedAt: number;
-  remote: boolean;
+  remote: boolean; // retained for backwards compatibility
   type: "job" | "internship";
+  currency: string;
   salaryLow: number;
   salaryHigh: number;
-  currency: string;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function AdminPageClient() {
-
   const router = useRouter();
-
 
   const {
     data: jobs = [],
     error,
     mutate,
   } = useSWR<Job[]>("/api/jobs", fetcher);
-
   const { data: requests = [] } = useSWR<any[]>("/api/requests", fetcher);
   const pendingCount = requests.length;
 
@@ -50,12 +65,10 @@ export default function AdminPageClient() {
     return (
       job.title.toLowerCase().includes(q) ||
       job.company.toLowerCase().includes(q) ||
-      job.location.toLowerCase().includes(q) ||
+      `${job.city}-${job.country}`.toLowerCase().includes(q) ||
       job.skills.some((s) => s.toLowerCase().includes(q))
     );
   });
-
-  // Only show up to visibleCount results
   const visibleJobs = filtered.slice(0, visibleCount);
 
   // CSV upload state
@@ -67,14 +80,20 @@ export default function AdminPageClient() {
   const [manual, setManual] = useState({
     title: "",
     company: "",
-    location: "",
+    city: "",
+    country: "",
+    officeType: "Remote" as Job["officeType"],
+    experienceLevel: "Intern" as Job["experienceLevel"],
+    employmentType: "Full-time" as Job["employmentType"],
+    industry: "Tech",
+    visa: false,
+    benefits: ["Health insurance"],
     skills: "",
     url: "",
-    remote: false,
-    type: "job" as "job" | "internship",
     currency: "$",
     salaryLow: "",
     salaryHigh: "",
+    type: "job" as "job" | "internship",
   });
 
   // Inline-edit state
@@ -83,21 +102,28 @@ export default function AdminPageClient() {
     id: "",
     title: "",
     company: "",
-    location: "",
+    city: "",
+    country: "",
+    officeType: "Remote",
+    experienceLevel: "Intern",
+    employmentType: "Full-time",
+    industry: "Tech",
+    visa: false,
+    benefits: [],
     skills: [],
     url: "",
     postedAt: 0,
     remote: false,
     type: "job",
+    currency: "$",
     salaryLow: 0,
     salaryHigh: 0,
-    currency: "$",
   });
 
   if (error) return <p>Error loading jobs</p>;
 
   // --- CSV Handling ---
-  const handleCsv = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCsv = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return setCsvError("No file selected");
     Papa.parse(file, {
@@ -113,11 +139,18 @@ export default function AdminPageClient() {
             uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
           title: row.title,
           company: row.company,
-          location: row.location,
+          city: row.city,
+          country: row.country,
+          officeType: row.officeType,
+          experienceLevel: row.experienceLevel,
+          employmentType: row.employmentType,
+          industry: row.industry,
+          visa: String(row.visa).toLowerCase() === "yes",
+          benefits: row.benefits?.split(",").map((b: string) => b.trim()) ?? [],
           skills: row.skills?.split(",").map((s: string) => s.trim()) ?? [],
           url: row.url,
           postedAt: Date.now(),
-          remote: String(row.remote).toLowerCase() === "y",
+          remote: String(row.officeType).toLowerCase().includes("remote"),
           type: String(row["j/i"]).toLowerCase() === "i" ? "internship" : "job",
           currency: row.currency || "$",
           salaryLow: parseInt(row.salaryLow, 10) || 0,
@@ -135,8 +168,10 @@ export default function AdminPageClient() {
     setUploading(true);
     const payload = parsedJobs.map((j) => ({
       ...j,
+      // convert to your API format (j/i, remote flag)
       type: j.type === "internship" ? "i" : "j",
       remote: j.remote,
+      benefits: j.benefits.join(","),
     }));
     await fetch("/api/jobs", {
       method: "POST",
@@ -154,11 +189,18 @@ export default function AdminPageClient() {
       id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
       title: manual.title,
       company: manual.company,
-      location: manual.location,
+      city: manual.city,
+      country: manual.country,
+      officeType: manual.officeType,
+      experienceLevel: manual.experienceLevel,
+      employmentType: manual.employmentType,
+      industry: manual.industry,
+      visa: manual.visa,
+      benefits: manual.benefits,
       skills: manual.skills.split(",").map((s) => s.trim()),
       url: manual.url,
       postedAt: Date.now(),
-      remote: manual.remote,
+      remote: manual.officeType.toLowerCase().includes("remote"),
       type: manual.type,
       currency: manual.currency,
       salaryLow: parseInt(manual.salaryLow, 10) || 0,
@@ -171,20 +213,27 @@ export default function AdminPageClient() {
         {
           ...newJob,
           type: newJob.type === "internship" ? "i" : "j",
+          benefits: newJob.benefits.join(","),
         },
       ]),
     });
     setManual({
       title: "",
       company: "",
-      location: "",
+      city: "",
+      country: "",
+      officeType: "Remote",
+      experienceLevel: "Intern",
+      employmentType: "Full-time",
+      industry: "Tech",
+      visa: false,
+      benefits: ["Health insurance"],
       skills: "",
       url: "",
-      remote: false,
-      type: "job",
       currency: "$",
       salaryLow: "",
       salaryHigh: "",
+      type: "job",
     });
     mutate();
   };
@@ -196,10 +245,12 @@ export default function AdminPageClient() {
   };
 
   const saveEdit = async () => {
+    if (!editingId) return;
     const payload = {
       ...editingData,
       type: editingData.type === "internship" ? "i" : "j",
-      remote: editingData.remote,
+      remote: editingData.officeType.toLowerCase().includes("remote"),
+      benefits: editingData.benefits.join(","),
     };
     await fetch("/api/jobs", {
       method: "POST",
@@ -219,8 +270,6 @@ export default function AdminPageClient() {
     mutate();
   };
 
-
-
   return (
     <div style={{ maxWidth: 900, margin: "2rem auto", padding: "1rem" }}>
       <h1>Admin Console</h1>
@@ -237,7 +286,6 @@ export default function AdminPageClient() {
       >
         Log out
       </button>
-
       <button
         onClick={() => router.push("/post-requests")}
         style={{
@@ -248,7 +296,7 @@ export default function AdminPageClient() {
           border: "none",
           borderRadius: "4px",
           cursor: "pointer",
-          marginLeft:"7px",
+          marginLeft: "7px",
         }}
       >
         Requests
@@ -263,7 +311,6 @@ export default function AdminPageClient() {
               fontSize: "0.6rem",
               padding: "0.2rem 0.4rem",
               borderRadius: "8px",
-              
             }}
           >
             {pendingCount}
@@ -317,28 +364,88 @@ export default function AdminPageClient() {
             onChange={(e) => setManual({ ...manual, company: e.target.value })}
           />
           <input
-            placeholder="Location City - Country e.g New York - USA"
-            value={manual.location}
-            onChange={(e) => setManual({ ...manual, location: e.target.value })}
+            placeholder="City"
+            value={manual.city}
+            onChange={(e) => setManual({ ...manual, city: e.target.value })}
+          />
+          <input
+            placeholder="Country"
+            value={manual.country}
+            onChange={(e) => setManual({ ...manual, country: e.target.value })}
+          />
+          <select
+            value={manual.officeType}
+            onChange={(e) =>
+              setManual({
+                ...manual,
+                officeType: e.target.value as Job["officeType"],
+              })
+            }
+          >
+            <option>Remote</option>
+            <option>Hybrid</option>
+            <option>In-Office</option>
+            <option>Remote-Anywhere</option>
+          </select>
+          <select
+            value={manual.experienceLevel}
+            onChange={(e) =>
+              setManual({
+                ...manual,
+                experienceLevel: e.target.value as Job["experienceLevel"],
+              })
+            }
+          >
+            <option>Intern</option>
+            <option>Entry-level</option>
+            <option>Associate/Mid-level</option>
+            <option>Senior-level</option>
+            <option>Managerial</option>
+            <option>Executive</option>
+          </select>
+          <select
+            value={manual.employmentType}
+            onChange={(e) =>
+              setManual({
+                ...manual,
+                employmentType: e.target.value as Job["employmentType"],
+              })
+            }
+          >
+            <option>Full-time</option>
+            <option>Part-time</option>
+            <option>Contract</option>
+            <option>Temporary</option>
+            <option>Freelance</option>
+          </select>
+          <input
+            placeholder="Industry / Job Sector"
+            value={manual.industry}
+            onChange={(e) => setManual({ ...manual, industry: e.target.value })}
           />
           <label>
             <input
               type="checkbox"
-              checked={manual.remote}
-              onChange={(e) =>
-                setManual({ ...manual, remote: e.target.checked })
-              }
+              checked={manual.visa}
+              onChange={(e) => setManual({ ...manual, visa: e.target.checked })}
             />{" "}
-            Remote
+            Visa Sponsorship Available
           </label>
           <select
-            value={manual.type}
-            onChange={(e) =>
-              setManual({ ...manual, type: e.target.value as any })
-            }
+            multiple
+            value={manual.benefits}
+            onChange={(e) => {
+              const opts = Array.from(
+                e.target.selectedOptions,
+                (opt) => opt.value
+              );
+              setManual({ ...manual, benefits: opts });
+            }}
           >
-            <option value="job">Job</option>
-            <option value="internship">Internship</option>
+            <option>Health insurance</option>
+            <option>Paid leave</option>
+            <option>Flexible working hours</option>
+            <option>Stock options</option>
           </select>
           <input
             placeholder="Skills (comma-separated)"
@@ -371,6 +478,18 @@ export default function AdminPageClient() {
               }
             />
           </div>
+          <select
+            value={manual.type}
+            onChange={(e) =>
+              setManual({
+                ...manual,
+                type: e.target.value as "job" | "internship",
+              })
+            }
+          >
+            <option value="job">Job</option>
+            <option value="internship">Internship</option>
+          </select>
           <button onClick={addManual}>Add Job</button>
         </div>
       </section>
@@ -384,181 +503,294 @@ export default function AdminPageClient() {
               <th>ID</th>
               <th>Title</th>
               <th>Company</th>
-              <th>Location</th>
-              <th>Remote</th>
+              <th>City</th>
+              <th>Country</th>
+              <th>Office Type</th>
+              <th>Experience</th>
+              <th>Employment</th>
+              <th>Industry</th>
+              <th>Visa</th>
+              <th>Benefits</th>
+              <th>Skills</th>
+              <th>URL</th>
               <th>Type</th>
               <th>Salary</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {visibleJobs.map((job) => (
-              <tr key={job.id}>
-                <td style={{ padding: "0.5rem" }}>{job.id}</td>
-
-                <td style={{ padding: "0.5rem" }}>
-                  {editingId === job.id ? (
-                    <input
-                      value={editingData.title}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          title: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    job.title
-                  )}
-                </td>
-
-                <td style={{ padding: "0.5rem" }}>
-                  {editingId === job.id ? (
-                    <input
-                      value={editingData.company}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          company: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    job.company
-                  )}
-                </td>
-
-                <td style={{ padding: "0.5rem" }}>
-                  {editingId === job.id ? (
-                    <input
-                      value={editingData.location}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          location: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    job.location
-                  )}
-                </td>
-
-                <td style={{ padding: "0.5rem", textAlign: "center" }}>
-                  {editingId === job.id ? (
-                    <input
-                      type="checkbox"
-                      checked={editingData.remote}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          remote: e.target.checked,
-                        })
-                      }
-                    />
-                  ) : job.remote ? (
-                    "Y"
-                  ) : (
-                    ""
-                  )}
-                </td>
-
-                <td style={{ padding: "0.5rem" }}>
-                  {editingId === job.id ? (
-                    <select
-                      value={editingData.type}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          type: e.target.value as any,
-                        })
-                      }
-                    >
-                      <option value="job">Job</option>
-                      <option value="internship">Internship</option>
-                    </select>
-                  ) : (
-                    job.type.charAt(0).toUpperCase() + job.type.slice(1)
-                  )}
-                </td>
-
-                <td style={{ padding: "0.5rem" }}>
-                  {editingId === job.id ? (
-                    <>
+            {visibleJobs.map((job) => {
+              const isEditing = editingId === job.id;
+              return (
+                <tr key={job.id}>
+                  <td style={{ padding: "0.5rem" }}>{job.id}</td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
                       <input
-                        style={{ width: "4rem" }}
-                        value={editingData.currency}
+                        value={editingData.title}
                         onChange={(e) =>
                           setEditingData({
                             ...editingData,
-                            currency: e.target.value,
+                            title: e.target.value,
                           })
                         }
                       />
+                    ) : (
+                      job.title
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
                       <input
-                        style={{ width: "4rem" }}
-                        value={editingData.salaryLow}
+                        value={editingData.company}
                         onChange={(e) =>
                           setEditingData({
                             ...editingData,
-                            salaryLow: parseInt(e.target.value) || 0,
-                          })
-                        }
-                      />{" "}
-                      -{" "}
-                      <input
-                        style={{ width: "4rem" }}
-                        value={editingData.salaryHigh}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            salaryHigh: parseInt(e.target.value) || 0,
+                            company: e.target.value,
                           })
                         }
                       />
-                    </>
-                  ) : (
-                    `${job.currency}${job.salaryLow} - ${job.currency}${job.salaryHigh}`
-                  )}
-                </td>
-
-                <td style={{ padding: "0.5rem" }}>
-                  {editingId === job.id ? (
-                    <>
-                      <button
-                        onClick={saveEdit}
-                        style={{ marginRight: "0.5rem" }}
+                    ) : (
+                      job.company
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <input
+                        value={editingData.city}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            city: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      job.city
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <input
+                        value={editingData.country}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            country: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      job.country
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <select
+                        value={editingData.officeType}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            officeType: e.target.value as Job["officeType"],
+                          })
+                        }
                       >
-                        Save
-                      </button>
-                      <button onClick={cancelEdit}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => startEdit(job)}
-                        style={{ marginRight: "0.5rem" }}
+                        <option>Remote</option>
+                        <option>Hybrid</option>
+                        <option>In-Office</option>
+                        <option>Remote-Anywhere</option>
+                      </select>
+                    ) : (
+                      job.officeType
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <select
+                        value={editingData.experienceLevel}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            experienceLevel: e.target
+                              .value as Job["experienceLevel"],
+                          })
+                        }
                       >
-                        Edit
-                      </button>
-                      <button onClick={() => deleteJob(job.id)}>Delete</button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
+                        <option>Intern</option>
+                        <option>Entry-level</option>
+                        <option>Associate/Mid-level</option>
+                        <option>Senior-level</option>
+                        <option>Managerial</option>
+                        <option>Executive</option>
+                      </select>
+                    ) : (
+                      editingData.experienceLevel
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <select
+                        value={editingData.employmentType}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            employmentType: e.target
+                              .value as Job["employmentType"],
+                          })
+                        }
+                      >
+                        <option>Full-time</option>
+                        <option>Part-time</option>
+                        <option>Contract</option>
+                        <option>Temporary</option>
+                        <option>Freelance</option>
+                      </select>
+                    ) : (
+                      job.employmentType
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <input
+                        value={editingData.industry}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            industry: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      job.industry
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem", textAlign: "center" }}>
+                    {isEditing ? (
+                      <input
+                        type="checkbox"
+                        checked={editingData.visa}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            visa: e.target.checked,
+                          })
+                        }
+                      />
+                    ) : job.visa ? (
+                      "Y"
+                    ) : (
+                      ""
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <select
+                        multiple
+                        value={editingData.benefits}
+                        onChange={(e) => {
+                          const opts = Array.from(
+                            e.target.selectedOptions,
+                            (opt) => opt.value
+                          );
+                          setEditingData({
+                            ...editingData,
+                            benefits: opts,
+                          });
+                        }}
+                      >
+                        <option>Health insurance</option>
+                        <option>Paid leave</option>
+                        <option>Flexible working hours</option>
+                        <option>Stock options</option>
+                      </select>
+                    ) : (
+                      job.benefits.join(", ")
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <input
+                        value={editingData.skills.join(", ")}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            skills: e.target.value
+                              .split(",")
+                              .map((s) => s.trim()),
+                          })
+                        }
+                      />
+                    ) : (
+                      job.skills.join(", ")
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <input
+                        value={editingData.url}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            url: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      job.url
+                    )}
+                  </td>
+                  <td style={{ padding: "0.5rem" }}>
+                    {isEditing ? (
+                      <select
+                        value={editingData.type}
+                        onChange={(e) =>
+                          setEditingData({
+                            ...editingData,
+                            type: e.target.value as "job" | "internship",
+                          })
+                        }
+                      >
+                        <option value="job">Job</option>
+                        <option value="internship">Internship</option>
+                      </select>
+                    ) : (
+                      job.type.toUpperCase()
+                    )}
+                  </td>
+                  <td
+                    style={{ padding: "0.5rem" }}
+                  >{`${job.currency}${job.salaryLow} - ${job.currency}${job.salaryHigh}`}</td>
+                  <td
+                    style={{
+                      padding: "0.5rem",
+                      display: "flex",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {editingId === job.id ? (
+                      <>
+                        <button onClick={saveEdit}>Save</button>
+                        <button onClick={cancelEdit}>Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(job)}>Edit</button>
+                        <button onClick={() => deleteJob(job.id)}>
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
 
       {/* Load More Button */}
       {visibleCount < filtered.length && (
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "1rem",
-          }}
-        >
+        <div style={{ textAlign: "center", marginTop: "1rem" }}>
           <button
             onClick={() => setVisibleCount((prev) => prev + 10)}
             style={{ padding: "0.5rem 1rem" }}

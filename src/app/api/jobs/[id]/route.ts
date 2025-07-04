@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 export async function DELETE(
-  request: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const db = await openDb();

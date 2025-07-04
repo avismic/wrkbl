@@ -119,17 +119,13 @@ export default function PostRequestsPage() {
           {reqs.map((r) => {
             const isEditing = editingId === r.id;
             const isLoading = loadingId === r.id;
-            const date = new Date(r.postedAt);
             const remoteText = r.remote ? "Y" : "";
             const typeLabel = r.type === "internship" ? "Internship" : "Job";
             const salaryText = `${r.currency}${r.salaryLow} – ${r.currency}${r.salaryHigh}`;
 
             return (
               <tr key={r.id}>
-                {/* ID */}
                 <td style={{ padding: "0.5rem" }}>{r.id}</td>
-
-                {/* Title */}
                 <td style={{ padding: "0.5rem" }}>
                   {isEditing ? (
                     <input
@@ -145,8 +141,6 @@ export default function PostRequestsPage() {
                     r.title
                   )}
                 </td>
-
-                {/* Company */}
                 <td style={{ padding: "0.5rem" }}>
                   {isEditing ? (
                     <input
@@ -162,8 +156,6 @@ export default function PostRequestsPage() {
                     r.company
                   )}
                 </td>
-
-                {/* Location */}
                 <td style={{ padding: "0.5rem" }}>
                   {isEditing ? (
                     <input
@@ -179,8 +171,6 @@ export default function PostRequestsPage() {
                     r.location
                   )}
                 </td>
-
-                {/* Remote */}
                 <td style={{ padding: "0.5rem", textAlign: "center" }}>
                   {isEditing ? (
                     <input
@@ -197,8 +187,6 @@ export default function PostRequestsPage() {
                     remoteText
                   )}
                 </td>
-
-                {/* Type */}
                 <td style={{ padding: "0.5rem" }}>
                   {isEditing ? (
                     <select
@@ -217,8 +205,6 @@ export default function PostRequestsPage() {
                     typeLabel
                   )}
                 </td>
-
-                {/* Salary */}
                 <td style={{ padding: "0.5rem" }}>
                   {isEditing ? (
                     <>
@@ -258,8 +244,6 @@ export default function PostRequestsPage() {
                     salaryText
                   )}
                 </td>
-
-                {/* Actions */}
                 <td
                   style={{
                     padding: "0.5rem",

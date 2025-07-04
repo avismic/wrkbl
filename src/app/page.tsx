@@ -96,7 +96,7 @@ export default function Page() {
     <main className={styles.glassContainer}>
       {/* <h1 className={styles.heading}>MayoCity</h1> */}
       <p className={styles.subtitle}>
-        Reach out to companies{' '}
+        Reach out to companies{" "}
         <span className={styles.highlight}>directly</span>
       </p>
       <div className={styles.searchContainer}>
@@ -118,7 +118,7 @@ export default function Page() {
                 type="checkbox"
                 checked={typeFilter.job}
                 onChange={() => toggleType("job")}
-              />{' '}
+              />{" "}
               Job
             </label>
             <label className={styles.filterItem}>
@@ -126,7 +126,7 @@ export default function Page() {
                 type="checkbox"
                 checked={typeFilter.internship}
                 onChange={() => toggleType("internship")}
-              />{' '}
+              />{" "}
               Internship
             </label>
           </div>
@@ -166,7 +166,7 @@ export default function Page() {
                     type="checkbox"
                     checked={selectedSkills.has(skill)}
                     onChange={() => toggleSet(skill, setSelectedSkills)}
-                  />{' '}
+                  />{" "}
                   {skill}
                 </label>
               ))}
@@ -207,7 +207,7 @@ export default function Page() {
                     type="checkbox"
                     checked={selectedLocations.has(loc)}
                     onChange={() => toggleSet(loc, setSelectedLocations)}
-                  />{' '}
+                  />{" "}
                   {loc}
                 </label>
               ))}
@@ -248,7 +248,7 @@ export default function Page() {
                     type="checkbox"
                     checked={selectedCompanies.has(c)}
                     onChange={() => toggleSet(c, setSelectedCompanies)}
-                  />{' '}
+                  />{" "}
                   {c}
                 </label>
               ))}

@@ -12,7 +12,14 @@ const { openDb } = require("../lib/db");
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         company TEXT NOT NULL,
-        location TEXT NOT NULL,
+        city TEXT NOT NULL,
+        country TEXT NOT NULL,
+        officeType TEXT NOT NULL,
+        experienceLevel TEXT NOT NULL,
+        employmentType TEXT NOT NULL,
+        industry TEXT NOT NULL,
+        visa INTEGER NOT NULL DEFAULT 0,
+        benefits TEXT NOT NULL,
         skills TEXT NOT NULL,
         url TEXT NOT NULL,
         postedAt INTEGER NOT NULL,
@@ -23,7 +30,7 @@ const { openDb } = require("../lib/db");
         currency TEXT NOT NULL DEFAULT '$'
       );
     `);
-    console.log("✅ jobs table initialized with salary fields");
+    console.log("✅ jobs table initialized with all new fields");
 
     // -- requests table --
     await db.exec(`DROP TABLE IF EXISTS requests;`);
@@ -32,7 +39,14 @@ const { openDb } = require("../lib/db");
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         company TEXT NOT NULL,
-        location TEXT NOT NULL,
+        city TEXT NOT NULL,
+        country TEXT NOT NULL,
+        officeType TEXT NOT NULL,
+        experienceLevel TEXT NOT NULL,
+        employmentType TEXT NOT NULL,
+        industry TEXT NOT NULL,
+        visa INTEGER NOT NULL DEFAULT 0,
+        benefits TEXT NOT NULL,
         skills TEXT NOT NULL,
         url TEXT NOT NULL,
         postedAt INTEGER NOT NULL,
@@ -43,7 +57,7 @@ const { openDb } = require("../lib/db");
         currency TEXT NOT NULL DEFAULT '$'
       );
     `);
-    console.log("✅ requests table initialized");
+    console.log("✅ requests table initialized with all new fields");
 
     process.exit(0);
   } catch (err) {

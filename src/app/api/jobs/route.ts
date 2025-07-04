@@ -6,15 +6,47 @@ export async function GET() {
   const db = await openDb();
   const rows: any[] = await db.all(`
     SELECT
-      id, title, company, location, skills, url, postedAt,
-      remote, type, salaryLow, salaryHigh, currency
+      id,
+      title,
+      company,
+      city,
+      country,
+      officeType,
+      experienceLevel,
+      employmentType,
+      industry,
+      visa,
+      benefits,
+      skills,
+      url,
+      postedAt,
+      remote,
+      type,
+      salaryLow,
+      salaryHigh,
+      currency
     FROM jobs
     ORDER BY postedAt DESC
   `);
+
   return NextResponse.json(
     rows.map((r) => ({
-      ...r,
+      id: r.id,
+      title: r.title,
+      company: r.company,
+      // build the legacy `location` field so your front-end code can still do job.location.toLowerCase()
+      location: `${r.city} – ${r.country}`,
+      city: r.city,
+      country: r.country,
+      officeType: r.officeType,
+      experienceLevel: r.experienceLevel,
+      employmentType: r.employmentType,
+      industry: r.industry,
+      visa: Boolean(r.visa),
+      benefits: r.benefits.split(",").map((b: string) => b.trim()),
       skills: r.skills.split(",").map((s: string) => s.trim()),
+      url: r.url,
+      postedAt: r.postedAt,
       remote: Boolean(r.remote),
       type: r.type === "i" ? "internship" : "job",
       salaryLow: r.salaryLow,
@@ -30,7 +62,14 @@ export async function POST(req: NextRequest) {
     id: string;
     title: string;
     company: string;
-    location: string;
+    city: string;
+    country: string;
+    officeType: string;
+    experienceLevel: string;
+    employmentType: string;
+    industry: string;
+    visa: boolean;
+    benefits: string;     // already comma-joined
     skills: string[];
     url: string;
     postedAt: number;
@@ -42,24 +81,41 @@ export async function POST(req: NextRequest) {
   }>;
 
   const db = await openDb();
-  // Define the SQL as a plain string
   const sql = `
-    INSERT INTO jobs
-      (id, title, company, location, skills, url, postedAt,
-       remote, type, salaryLow, salaryHigh, currency)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO jobs (
+      id, title, company,
+      city, country,
+      officeType, experienceLevel, employmentType, industry,
+      visa, benefits,
+      skills, url, postedAt,
+      remote, type, salaryLow, salaryHigh, currency
+    ) VALUES (
+      ?, ?, ?,
+      ?, ?,
+      ?, ?, ?, ?,
+      ?, ?,
+      ?, ?, ?,
+      ?, ?, ?, ?, ?
+    )
     ON CONFLICT(id) DO UPDATE SET
-      title       = excluded.title,
-      company     = excluded.company,
-      location    = excluded.location,
-      skills      = excluded.skills,
-      url         = excluded.url,
-      postedAt    = excluded.postedAt,
-      remote      = excluded.remote,
-      type        = excluded.type,
-      salaryLow   = excluded.salaryLow,
-      salaryHigh  = excluded.salaryHigh,
-      currency    = excluded.currency
+      title            = excluded.title,
+      company          = excluded.company,
+      city             = excluded.city,
+      country          = excluded.country,
+      officeType       = excluded.officeType,
+      experienceLevel  = excluded.experienceLevel,
+      employmentType   = excluded.employmentType,
+      industry         = excluded.industry,
+      visa             = excluded.visa,
+      benefits         = excluded.benefits,
+      skills           = excluded.skills,
+      url              = excluded.url,
+      postedAt         = excluded.postedAt,
+      remote           = excluded.remote,
+      type             = excluded.type,
+      salaryLow        = excluded.salaryLow,
+      salaryHigh       = excluded.salaryHigh,
+      currency         = excluded.currency
   `.trim();
 
   const stmt = await db.prepare(sql);
@@ -69,7 +125,14 @@ export async function POST(req: NextRequest) {
         job.id,
         job.title,
         job.company,
-        job.location,
+        job.city,
+        job.country,
+        job.officeType,
+        job.experienceLevel,
+        job.employmentType,
+        job.industry,
+        job.visa ? 1 : 0,
+        job.benefits,
         job.skills.join(","),
         job.url,
         job.postedAt,

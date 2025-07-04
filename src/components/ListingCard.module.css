@@ -1,33 +1,35 @@
+/* src/components/ListingCard.module.css */
 .card {
   display: block;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.762);
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 0.75rem;
+  margin-bottom: 1.25rem;
   text-decoration: none;
-  color: black;
-  transition: transform 0.4s, box-shadow 0.4s;
-  
+  color: #333;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 16px rgba(255, 255, 255, 0.514);
-  border: solid;
-  border-color: black;
-  border-width: 1px;
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
 .meta {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.type {
-  background-color: #e2e8f0;
-  padding: 0.2rem 0.5rem;
+.jobType {
+  background-color: #2a9d8f;
+  color: white;
+  padding: 0.2rem 0.6rem;
   border-radius: 0.25rem;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -36,30 +38,51 @@
 }
 
 .title {
-  margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 1rem;
 }
 
 .company {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #555;
+  font-weight: 500;
 }
 
 .location {
-  margin: 0;
+  color: #888;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  background: #e0e0e0;
+  color: #333;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.3rem;
   font-size: 0.8rem;
-  color: #777;
 }
 
 .salary {
-  margin: 0.5rem 0;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #2a9d8f;
+  margin-bottom: 1rem;
 }
 
 .skills {
-  margin-top: 0.75rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -67,7 +90,8 @@
 
 .chip {
   background: #99a7b6;
-  padding: 0.25rem 0.5rem;
+  color: white;
+  padding: 0.3rem 0.6rem;
   font-size: 0.75rem;
-  border-radius: 0.25rem;
+  border-radius: 0.3rem;
 }
