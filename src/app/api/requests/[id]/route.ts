@@ -4,21 +4,27 @@ import { openDb } from "@/lib/db";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  // 1) await your dynamic id
+  const { id } = await params;
+
+  // 2) delete the request
   const pool = await openDb();
   await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
+
   return NextResponse.json({ success: true });
 }
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  // 1) await params and parse body
+  const { id } = await params;
   const body = await request.json();
-  const { id } = params;
 
+  // 2) CSV-join arrays
   const industryCsv = Array.isArray(body.industries)
     ? body.industries.join(",")
     : body.industries ?? "";
@@ -29,6 +35,7 @@ export async function POST(
     ? body.skills.join(",")
     : body.skills ?? "";
 
+  // 3) pull out the rest
   const {
     title,
     company,
@@ -47,6 +54,7 @@ export async function POST(
     currency,
   } = body;
 
+  // 4) update the row
   const pool = await openDb();
   await pool.query(
     `
