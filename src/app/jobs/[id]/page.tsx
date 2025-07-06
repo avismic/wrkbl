@@ -3,14 +3,17 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { jobs } from "../../../data/jobs";
 
-export default function JobPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const job = jobs.find((j) => j.id === params.id);
+export default async function JobPage(
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // 1) await the dynamic id
+  const { id } = await params;
+
+  // 2) look up the job
+  const job = jobs.find((j) => j.id === id);
   if (!job) notFound();
 
+  // 3) render
   return (
     <main style={{ padding: "2rem", maxWidth: "600px", margin: "0 auto" }}>
       <h1>{job.title}</h1>
