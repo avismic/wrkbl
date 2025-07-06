@@ -1,22 +1,25 @@
-/* src/components/Footer.module.css */
 .footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
   background: #4baaf3;
   color: white;
-  padding: 2rem;
 }
 
+.inner {
+  /* match header’s full-bleed but inset by 2rem on each side */
+  box-sizing: border-box;
+  width: 100%;
+  padding: 2rem;         /* same horizontal padding as Header.inner */
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+/* Brand section */
 .brand {
   display: flex;
   align-items: flex-start;
-  margin-left: 2rem;
-}
-
-.address {
-  margin-left: 1rem;
+  gap: 1rem;
 }
 
 .address h2 {
@@ -30,10 +33,10 @@
   line-height: 1.4;
 }
 
+/* Link columns */
 .links {
   display: flex;
   gap: 4rem;
-  margin-right: 5rem;
 }
 
 .links ul {
@@ -56,18 +59,36 @@
   text-decoration: underline;
 }
 
-/* Collapse to single column on small screens */
+/* MOBILE */
 @media (max-width: 600px) {
-  .footer {
+  .inner {
     flex-direction: column;
     align-items: center;
     text-align: center;
-  }
-  .brand {
-    margin-bottom: 2rem;
-  }
-  .links {
-    flex-direction: column;
+    padding: 2rem 1rem;
     gap: 1.5rem;
+  }
+
+  .brand {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* grid-style links on mobile */
+  .links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem 2rem;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .links ul {
+    margin: 0;
+  }
+
+  .links li {
+    margin-bottom: 0.5rem;
   }
 }

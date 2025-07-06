@@ -1,0 +1,260 @@
+/* ====== MayoCity admin console ====== */
+:root {
+  --color-bg-dark: #1b1b1b;
+  --color-card-bg: #ffffff;
+  --color-primary: #4baaf3;
+  --color-primary-light: #69c1ff;
+  --color-danger: #e74c3c;
+  --color-border: #2a2a2a;
+  --radius: 6px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+/* Layout */
+.container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: var(--color-bg-dark);
+  color: #f1f1f1;
+  min-height: 100vh;
+}
+
+.title {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Buttons */
+.button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.logout {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.primary {
+  background: var(--color-primary);
+  color: #fff;
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.6rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 50%;
+}
+
+/* Inputs */
+.searchInput {
+  width: 97%;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-radius: var(--radius);
+  background: #d1d5db;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  color: #ffffff;
+}
+
+/* Card-like panels */
+.card {
+  border: 1px solid var(--color-border);
+  background: #202020;
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+/* Form grid */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.formGrid input,
+.formGrid select {
+  width: 97%;
+  padding: 0.5rem 0.6rem;
+  background: #f3f4f6;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+/* ===== Re-usable checkbox look (industry, benefits, visa) ===== */
+
+/* Any label that’s a direct child of .formGrid (e.g. Visa) … */
+.formGrid > label,
+/* …and all labels inside .checkboxGroup (industry / benefits) */
+.checkboxGroup label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Custom square */
+.formGrid > label input[type="checkbox"],
+.checkboxGroup input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: #4baaf3c8;
+  border-radius: 4px;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+/* Tick */
+.formGrid > label input[type="checkbox"]::after,
+.checkboxGroup input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid transparent;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Checked state */
+.formGrid > label input[type="checkbox"]:checked,
+.checkboxGroup input[type="checkbox"]:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.formGrid > label input[type="checkbox"]:checked::after,
+.checkboxGroup input[type="checkbox"]:checked::after {
+  border-color: #ffffff;
+}
+
+/* Hover / focus */
+.formGrid > label input[type="checkbox"]:hover,
+.checkboxGroup input[type="checkbox"]:hover,
+.formGrid > label input[type="checkbox"]:focus-visible,
+.checkboxGroup input[type="checkbox"]:focus-visible {
+  box-shadow: 0 0 0 2px #4baaf3a7;
+  outline: none;
+}
+
+/* Group wrapper */
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* File upload & errors */
+.fileInput {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.uploadBtn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  cursor: pointer;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #f1f1f1;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table thead {
+  background: #202020;
+}
+
+.table tbody tr:hover {
+  background: #262626;
+}
+
+/* Action buttons inside table */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit {
+  background: var(--color-primary-light);
+  color: #fff;
+}
+
+.delete {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+/* Load-more */
+.loadMore {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.loadMore:hover {
+  opacity: 0.9;
+}

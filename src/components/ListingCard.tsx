@@ -22,14 +22,14 @@ export interface Job {
     | "Contract"
     | "Temporary"
     | "Freelance";
-  industry: string;
+  industries: string[];
   visa: boolean;
   benefits: string[];
   skills: string[];
   url: string;
   postedAt: number;
   type: "job" | "internship";
-  currency: string;
+  currency: string;          // e.g. "USD"
   salaryLow: number;
   salaryHigh: number;
 }
@@ -49,14 +49,27 @@ export default function ListingCard({ job }: Props) {
 
   const typeLabel = job.type === "internship" ? "INTERNSHIP" : "JOB";
 
-  const salaryText = `${job.currency}${job.salaryLow.toLocaleString()} – ${
-    job.currency
-  }${job.salaryHigh.toLocaleString()}`;
+  /* ------------ NEW: code ➜ symbol map ------------ */
+  const currencySymbols: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    AUD: "A$",
+    CAD: "C$",
+    CHF: "CHF",
+    CNY: "¥",
+    SEK: "kr",
+    NZD: "NZ$",
+    INR: "₹",
+  };
+  const symbol = currencySymbols[job.currency] ?? job.currency;
+  /* ------------------------------------------------- */
+
+  const salaryText = `${symbol}${job.salaryLow.toLocaleString()} – ${symbol}${job.salaryHigh.toLocaleString()}`;
 
   const date = new Date(job.postedAt);
-  const dateString = `${date.getDate()}/${
-    date.getMonth() + 1
-  }/${date.getFullYear()}`;
+  const dateString = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -83,14 +96,20 @@ export default function ListingCard({ job }: Props) {
 
       <div className={styles.sub}>
         <span className={styles.company}>{job.company}</span>
-        {locationText && <span className={styles.location}>· {locationText}</span>}
+        {locationText && (
+          <span className={styles.location}>· {locationText}</span>
+        )}
       </div>
 
       <div className={styles.badges}>
         <span className={styles.badge}>{job.officeType}</span>
         <span className={styles.badge}>{job.experienceLevel}</span>
         <span className={styles.badge}>{job.employmentType}</span>
-        <span className={styles.badge}>{job.industry}</span>
+        {job.industries.map((ind) => (
+          <span key={ind} className={styles.badge}>
+            {ind}
+          </span>
+        ))}
       </div>
 
       <div className={styles.salary}>{salaryText}</div>

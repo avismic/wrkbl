@@ -1,291 +1,246 @@
 // src/app/post-requests/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import useSWR from "swr";
-import { useRouter } from "next/navigation";
+import BulkActionBar from "@/components/BulkActionBar";
+import JobForm from "@/components/JobForm/JobForm";
+import styles from "./page.module.css";
 
-// same fetcher as everywhere else
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (u: string) => fetch(u).then(r => r.json());
 
-interface JobRequest {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  skills: string[]; // stored as JSON-array string in DB
-  url: string;
-  postedAt: number;
-  remote: boolean;
-  type: "job" | "internship";
-  salaryLow: number;
-  salaryHigh: number;
-  currency: string;
+/* ─── fixed lists (kept for search helpers, review panel) ─── */
+const industryOptions = ["Tech","Marketing","Finance","Healthcare","Education"];
+const benefitOptions  = ["Health insurance","Paid leave","Flexible working hours","Stock options"];
+const currencyOptions = [
+  {code:"USD",label:"USD ($)"},{code:"EUR",label:"EUR (€)"},{code:"JPY",label:"JPY (¥)"},
+  {code:"GBP",label:"GBP (£)"},{code:"AUD",label:"AUD (A$)"},{code:"CAD",label:"CAD (C$)"},
+  {code:"CHF",label:"CHF (CHF)"},{code:"CNY",label:"CNY (¥)"},{code:"SEK",label:"SEK (kr)"},
+  {code:"NZD",label:"NZD (NZ$)"},
+];
+
+/* ─── types ─── */
+interface RawRequest{
+  id:string; title:string; company:string;
+  city?:string; country?:string; officeType?:string; experienceLevel?:string;
+  employmentType?:string; industries?:string|string[]; industry?:string;
+  benefits?:string|string[]; visa?:boolean|number; skills?:string|string[];
+  url?:string; postedAt?:number; remote?:boolean|number;
+  type:"job"|"internship"|"j"|"i";
+  salaryLow?:number|string; salaryHigh?:number|string; currency?:string;
 }
 
-export default function PostRequestsPage() {
-  const router = useRouter();
-  const { data: reqs = [], mutate: mutateReqs } = useSWR<JobRequest[]>(
-    "/api/requests",
-    fetcher
-  );
-  const { mutate: mutateJobs } = useSWR<JobRequest[]>("/api/jobs", fetcher);
+const arr = (v?:string[]|string)=>Array.isArray(v)?v:(v? v.split(",").map(s=>s.trim()):[]);
+const normalise = (r: RawRequest) => ({
+  id:r.id, title:r.title||"", company:r.company||"",
+  city:r.city||"", country:r.country||"",
+  officeType:r.officeType||"", experienceLevel:r.experienceLevel||"",
+  employmentType:r.employmentType||"",
+  industries:arr((r as any).industries ?? (r as any).industry),
+  benefits:arr(r.benefits), visa:!!r.visa, skills:arr(r.skills),
+  url:r.url||"", postedAt:r.postedAt??Date.now(), remote:!!r.remote,
+  type:r.type==="i"||r.type==="internship"?"internship":"job",
+  salaryLow: typeof r.salaryLow==="string"?parseInt(r.salaryLow)||0:r.salaryLow??0,
+  salaryHigh:typeof r.salaryHigh==="string"?parseInt(r.salaryHigh)||0:r.salaryHigh??0,
+  currency:r.currency||"USD",
+});
+type JobRequest = ReturnType<typeof normalise>;
 
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<JobRequest>({
-    id: "",
-    title: "",
-    company: "",
-    location: "",
-    skills: [],
-    url: "",
-    postedAt: 0,
-    remote: false,
-    type: "job",
-    salaryLow: 0,
-    salaryHigh: 0,
-    currency: "$",
-  });
+export default function RequestsPage(){
+  /* data */
+  const { data=[], mutate:mutateReq } = useSWR<RawRequest[]>("/api/requests",fetcher);
+  const { mutate:mutateJobs }        = useSWR("/api/jobs",fetcher);
+  const requests = useMemo(()=>data.map(normalise),[data]);
 
-  // click “Edit” → populate editingData
-  const startEdit = (r: JobRequest) => {
-    setEditingId(r.id);
-    setEditingData(r);
+  /* search & pagination */
+  const [query,setQuery]=useState(""); const [visibleCount,setVisibleCount]=useState(10);
+  const filtered = useMemo(()=>{
+    const q=query.trim().toLowerCase();
+    return requests.filter(j=>
+      !q ||
+      j.title.toLowerCase().includes(q) ||
+      j.company.toLowerCase().includes(q) ||
+      `${j.city}, ${j.country}`.toLowerCase().includes(q) ||
+      j.skills.some(s=>s.toLowerCase().includes(q))
+    );
+  },[requests,query]);
+  const visible = filtered.slice(0,visibleCount);
+
+  /* edit panel */
+  const [editing,setEditing]=useState<JobRequest|null>(null);
+  const [savingId,setSavingId]=useState<string|null>(null);
+
+  const saveEdit = async (payload:any)=>{
+    setSavingId(payload.id);
+    /* ---- BUG-FIX -- use `industry` (singular) to match DB column ---- */
+    const body = {
+      ...payload,
+      industry:  payload.industries.join(","),         // <- fixed
+      benefits:  payload.benefits.join(","),
+      skills:    payload.skills.join(","),
+      type:      payload.type==="internship"?"i":"j",
+      visa:      payload.visa?1:0,
+      remote:    payload.remote?1:0,
+    };
+    delete (body as any).industries;                  // keep JSON clean
+
+    await fetch(`/api/requests/${payload.id}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+    await mutateReq();
+    setSavingId(null); setEditing(null);
   };
 
-  // click “Cancel”
-  const cancelEdit = () => {
-    setEditingId(null);
+  /* selection & bulk actions (unchanged) */
+  const [selected,setSelected]=useState<Set<string>>(new Set());
+  const toggleOne=(id:string)=>setSelected(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
+  const toggleAll=()=>{
+    const ids=visible.map(r=>r.id);
+    const all=ids.every(i=>selected.has(i));
+    setSelected(new Set(all?[]:ids));
   };
 
-  // save edits back to /api/requests/[id] via POST
-  const saveEdit = async () => {
-    if (!editingId) return;
-    setLoadingId(editingId);
-    try {
-      await fetch(`/api/requests/${editingId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...editingData,
-          // convert type & remote flags to your shorthand if needed:
-          type: editingData.type === "internship" ? "i" : "j",
-          remote: editingData.remote,
-        }),
+  const [loadingBulk,setLoadingBulk]=useState(false);
+  const [bulkProgress,setBulkProgress]=useState(0);
+
+  const handlePostSelected = async()=>{
+    setLoadingBulk(true); setBulkProgress(0);
+    const ids=[...selected];
+    for(let i=0;i<ids.length;i++){
+      await fetch(`/api/requests/${ids[i]}/post`,{method:"POST"});
+      setBulkProgress(i+1);
+    }
+    await mutateReq(); await mutateJobs();
+    setSelected(new Set()); setLoadingBulk(false);
+  };
+
+  const handleDeleteSelected = async()=>{
+    setLoadingBulk(true); setBulkProgress(0);
+    const ids=[...selected];
+    for(let i=0;i<ids.length;i++){
+      await fetch(`/api/requests/${ids[i]}`,{method:"DELETE"});
+      setBulkProgress(i+1);
+    }
+    await mutateReq(); setSelected(new Set()); setLoadingBulk(false);
+  };
+
+  const handleReviewSelected = async()=>{
+    setLoadingBulk(true); setBulkProgress(0);
+    const ids=[...selected];
+    try{
+      const rsp = await fetch("/api/review-requests",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ids})
       });
-      await mutateReqs();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingId(null);
-      setEditingId(null);
-    }
+      const {results} = await rsp.json() as {results:Record<string,string>};
+      setReviewResults(results);
+
+      const valids = Object.entries(results).filter(([,v])=>v==="valid").map(([id])=>id);
+      for(let i=0;i<valids.length;i++){
+        await fetch(`/api/requests/${valids[i]}/post`,{method:"POST"});
+        setBulkProgress(i+1);
+      }
+      await mutateReq(); if(valids.length) await mutateJobs();
+    }catch(e){console.error(e);alert("Gemini review failed.");}
+    setSelected(new Set()); setLoadingBulk(false);
   };
 
-  // either Post (publish) or Delete (reject)
-  const handleAction = async (id: string, action: "post" | "delete") => {
-    setLoadingId(id);
-    try {
-      const url =
-        action === "post" ? `/api/requests/${id}/post` : `/api/requests/${id}`;
-      await fetch(url, { method: action === "post" ? "POST" : "DELETE" });
-      await mutateReqs();
-      if (action === "post") await mutateJobs();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingId(null);
-    }
-  };
+  /* Gemini results panel */
+  const [reviewResults,setReviewResults]=useState<Record<string,string>|null>(null);
 
+  /* UI */
   return (
-    <div style={{ maxWidth: 900, margin: "2rem auto", padding: "1rem" }}>
-      <h1>Pending Job Requests</h1>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <div className={styles.container}>
+      <h1 className={styles.title}>Pending Job Requests</h1>
+
+      <input className={styles.searchInput}
+             placeholder="Search title, company, location, skills…"
+             value={query}
+             onChange={e=>{setQuery(e.target.value);setVisibleCount(10);}}/>
+
+      {/* edit panel */}
+      {editing && (
+        <div className={styles.card}>
+          <h2>Edit Request</h2>
+          <JobForm
+            initial={editing}
+            editMode
+            loading={savingId===editing.id}
+            onSubmit={saveEdit}
+            onCancel={()=>setEditing(null)}
+          />
+        </div>
+      )}
+
+      {/* table */}
+      <table className={styles.table}>
         <thead>
           <tr>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>ID</th>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>Title</th>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>Company</th>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>Location</th>
-            <th style={{ padding: "0.5rem", textAlign: "center" }}>Remote</th>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>Type</th>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>Salary</th>
-            <th style={{ padding: "0.5rem", textAlign: "left" }}>Actions</th>
+            <th><input type="checkbox"
+                       checked={visible.length>0 && visible.every(r=>selected.has(r.id))}
+                       onChange={toggleAll}/></th>
+            <th>ID</th><th>Title</th><th>Company</th>
+            <th>City</th><th>Country</th><th>Type</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {reqs.map((r) => {
-            const isEditing = editingId === r.id;
-            const isLoading = loadingId === r.id;
-            const remoteText = r.remote ? "Y" : "";
-            const typeLabel = r.type === "internship" ? "Internship" : "Job";
-            const salaryText = `${r.currency}${r.salaryLow} – ${r.currency}${r.salaryHigh}`;
-
+          {visible.map(r=>{
+            const busy=savingId===r.id;
             return (
               <tr key={r.id}>
-                <td style={{ padding: "0.5rem" }}>{r.id}</td>
-                <td style={{ padding: "0.5rem" }}>
-                  {isEditing ? (
-                    <input
-                      value={editingData.title}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          title: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    r.title
-                  )}
-                </td>
-                <td style={{ padding: "0.5rem" }}>
-                  {isEditing ? (
-                    <input
-                      value={editingData.company}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          company: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    r.company
-                  )}
-                </td>
-                <td style={{ padding: "0.5rem" }}>
-                  {isEditing ? (
-                    <input
-                      value={editingData.location}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          location: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    r.location
-                  )}
-                </td>
-                <td style={{ padding: "0.5rem", textAlign: "center" }}>
-                  {isEditing ? (
-                    <input
-                      type="checkbox"
-                      checked={editingData.remote}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          remote: e.target.checked,
-                        })
-                      }
-                    />
-                  ) : (
-                    remoteText
-                  )}
-                </td>
-                <td style={{ padding: "0.5rem" }}>
-                  {isEditing ? (
-                    <select
-                      value={editingData.type}
-                      onChange={(e) =>
-                        setEditingData({
-                          ...editingData,
-                          type: e.target.value as "job" | "internship",
-                        })
-                      }
-                    >
-                      <option value="job">Job</option>
-                      <option value="internship">Internship</option>
-                    </select>
-                  ) : (
-                    typeLabel
-                  )}
-                </td>
-                <td style={{ padding: "0.5rem" }}>
-                  {isEditing ? (
-                    <>
-                      <input
-                        style={{ width: "3rem" }}
-                        value={editingData.currency}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            currency: e.target.value,
-                          })
-                        }
-                      />
-                      <input
-                        style={{ width: "4rem", margin: "0 0.25rem" }}
-                        value={editingData.salaryLow}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            salaryLow: parseInt(e.target.value) || 0,
-                          })
-                        }
-                      />
-                      –
-                      <input
-                        style={{ width: "4rem", margin: "0 0.25rem" }}
-                        value={editingData.salaryHigh}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            salaryHigh: parseInt(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </>
-                  ) : (
-                    salaryText
-                  )}
-                </td>
-                <td
-                  style={{
-                    padding: "0.5rem",
-                    display: "flex",
-                    gap: "0.5rem",
-                    alignItems: "center",
-                  }}
-                >
-                  {isEditing ? (
-                    <>
-                      <button onClick={saveEdit} disabled={isLoading}>
-                        Save
-                      </button>
-                      <button onClick={cancelEdit} disabled={isLoading}>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => startEdit(r)} disabled={isLoading}>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleAction(r.id, "post")}
-                        disabled={isLoading}
-                      >
-                        Post
-                      </button>
-                      <button
-                        onClick={() => handleAction(r.id, "delete")}
-                        disabled={isLoading}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
+                <td><input type="checkbox" checked={selected.has(r.id)} onChange={()=>toggleOne(r.id)}/></td>
+                <td>{r.id}</td><td>{r.title}</td><td>{r.company}</td>
+                <td>{r.city}</td><td>{r.country}</td>
+                <td>{r.type==="internship"?"Internship":"Job"}</td>
+                <td className={styles.actions}>
+                  <button className={`${styles.button} ${styles.edit}`}
+                          onClick={()=>setEditing(r)}
+                          disabled={busy||editing?.id===r.id}>Edit</button>
+                  <button className={`${styles.button} ${styles.primary}`}
+                          onClick={async()=>{await fetch(`/api/requests/${r.id}/post`,{method:"POST"});
+                                             mutateReq();mutateJobs();}}
+                          disabled={busy}>Post</button>
+                  <button className={`${styles.button} ${styles.delete}`}
+                          onClick={async()=>{await fetch(`/api/requests/${r.id}`,{method:"DELETE"});
+                                             mutateReq();}}
+                          disabled={busy}>Delete</button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {/* bulk bar */}
+      {selected.size>0 && (
+        <BulkActionBar
+          count={selected.size}
+          onPostAll={handlePostSelected}
+          onDeleteAll={handleDeleteSelected}
+          onReviewAll={handleReviewSelected}
+          disabled={loadingBulk}
+          progress={bulkProgress}
+          total={selected.size}
+        />
+      )}
+
+      {/* load-more */}
+      {visibleCount<filtered.length && (
+        <div style={{textAlign:"center",marginTop:"1rem"}}>
+          <button className={styles.loadMore} onClick={()=>setVisibleCount(c=>c+10)}>Load More</button>
+        </div>
+      )}
+
+      {/* Gemini review panel */}
+      {reviewResults && (
+        <div className={styles.reviewPanel}>
+          <h3>Gemini Review</h3>
+          <pre>{JSON.stringify(reviewResults,null,2)}</pre>
+          <button className={`${styles.button} ${styles.delete}`} onClick={()=>setReviewResults(null)}>Close</button>
+        </div>
+      )}
     </div>
   );
 }

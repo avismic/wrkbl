@@ -2,9 +2,13 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent } from "react";
+import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import styles from "./page.module.css";
+import CsvUploadPanel from "@/components/CsvUploadPanel";
 
+
+/* ─── option lists (same as admin) ─── */
 type OfficeType = "Remote" | "Hybrid" | "In-Office" | "Remote-Anywhere";
 type ExperienceLevel =
   | "Intern"
@@ -20,78 +24,162 @@ type EmploymentType =
   | "Temporary"
   | "Freelance";
 
+const benefitOptions = [
+  "Health insurance",
+  "Paid leave",
+  "Flexible working hours",
+  "Stock options",
+];
+
+const currencyOptions = [
+  { code: "USD", label: "USD ($)" },
+  { code: "EUR", label: "EUR (€)" },
+  { code: "JPY", label: "JPY (¥)" },
+  { code: "GBP", label: "GBP (£)" },
+  { code: "AUD", label: "AUD (A$)" },
+  { code: "CAD", label: "CAD (C$)" },
+  { code: "CHF", label: "CHF (CHF)" },
+  { code: "CNY", label: "CNY (¥)" },
+  { code: "SEK", label: "SEK (kr)" },
+  { code: "NZD", label: "NZD (NZ$)" },
+];
+
+/* ─── manual form state ─── */
+const emptyForm = {
+  title: "",
+  company: "",
+  city: "",
+  country: "",
+  officeType: "" as "" | OfficeType,
+  experienceLevel: "" as "" | ExperienceLevel,
+  employmentType: "" as "" | EmploymentType,
+  industries: [] as string[],
+  visa: false,
+  benefits: [] as string[],
+  skills: "",
+  url: "",
+  currency: "",
+  salaryLow: "",
+  salaryHigh: "",
+  type: "" as "" | "job" | "internship",
+};
+
 export default function PostAJobPage() {
-  const [form, setForm] = useState({
-    title: "",
-    company: "",
-    city: "",
-    country: "",
-    officeType: "Remote" as OfficeType,
-    experienceLevel: "Intern" as ExperienceLevel,
-    employmentType: "Full-time" as EmploymentType,
-    industry: "",
-    visa: false,
-    benefits: ["Health insurance"] as string[],
-    skills: "",
-    url: "",
-    currency: "$",
-    salaryLow: "",
-    salaryHigh: "",
-    type: "job" as "job" | "internship",
-  });
+  /* manual-form hooks */
+  const [form, setForm] = useState(emptyForm);
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type, checked, multiple, options } = e.target as any;
-    if (type === "checkbox" && name === "visa") {
-      setForm((f) => ({ ...f, visa: checked }));
-    } else if (multiple && name === "benefits") {
-      const selected = Array.from(options)
-        .filter((o: HTMLOptionElement) => o.selected)
-        .map((o: HTMLOptionElement) => o.value);
-      setForm((f) => ({ ...f, benefits: selected }));
-    } else {
-      setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+  /* csv-upload hooks */
+  type CsvJob = typeof emptyForm & { id: string; postedAt: number };
+  const [parsedJobs, setParsedJobs] = useState<CsvJob[]>([]);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [uploadingCsv, setUploadingCsv] = useState(false);
+
+  /* ───────── CSV upload logic ───────── */
+  const handleCsv = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return setCsvError("No file selected");
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: ({ data, errors }) => {
+        if (errors.length) {
+          setCsvError(errors.map((er) => er.message).join("; "));
+        } else {
+          const rows: CsvJob[] = (data as any[]).map((row) => ({
+            id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
+            title: row.title || "",
+            company: row.company || "",
+            city: row.city || "",
+            country: row.country || "",
+            officeType: row.officeType || "",
+            experienceLevel: row.experienceLevel || "",
+            employmentType: row.employmentType || "",
+            industries:
+              row.industries?.split(",").map((s: string) => s.trim()) ?? [],
+            visa: String(row.visa).toLowerCase() === "yes",
+            benefits: row.benefits?.split(",").map((s: string) => s.trim()) ?? [],
+            skills: row.skills || "",
+            url: row.url || "",
+            currency: row.currency || "",
+            salaryLow: row.salaryLow || "",
+            salaryHigh: row.salaryHigh || "",
+            type:
+              String(row["type"] ?? row["j/i"])?.toLowerCase() === "internship" ||
+              String(row["j/i"]).toLowerCase() === "i"
+                ? "internship"
+                : "job",
+            postedAt: Date.now(),
+          }));
+          setParsedJobs(rows);
+          setCsvError(null);
+        }
+      },
+      error: (err) => setCsvError(err.message),
+    });
+  };
+
+  const uploadCsvJobs = async () => {
+    if (!parsedJobs.length) return;
+    setUploadingCsv(true);
+    try {
+      for (const job of parsedJobs) {
+        await fetch("/api/requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...job,
+            skills: job.skills.split(",").map((s) => s.trim()),
+            industry: job.industries.join(","), // legacy fallback
+          }),
+        });
+      }
+      setParsedJobs([]);
+    } catch (err: any) {
+      setCsvError(err.message || "Failed to upload");
+    } finally {
+      setUploadingCsv(false);
     }
   };
 
+  /* ───────── manual form helpers ───────── */
+  const onChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type, checked } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const toggleArr = (key: "industries" | "benefits", val: string, max = 99) =>
+    setForm((f) => {
+      const next = new Set(f[key]);
+      next.has(val) ? next.delete(val) : next.add(val);
+      if (key === "industries" && next.size > max) return f;
+      return { ...f, [key]: Array.from(next) };
+    });
+
+  /* ───────── manual submit ───────── */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setStatus("sending");
     setError(null);
-
-    const payload = {
-      id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
-      title: form.title,
-      company: form.company,
-      city: form.city,
-      country: form.country,
-      officeType: form.officeType,
-      experienceLevel: form.experienceLevel,
-      employmentType: form.employmentType,
-      industry: form.industry,
-      visa: form.visa,
-      benefits: form.benefits,
-      skills: form.skills.split(",").map((s) => s.trim()),
-      url: form.url,
-      postedAt: Date.now(),
-      remote: form.officeType.toLowerCase().includes("remote"),
-      type: form.type,
-      currency: form.currency,
-      salaryLow: parseInt(form.salaryLow, 10) || 0,
-      salaryHigh: parseInt(form.salaryHigh, 10) || 0,
-    };
-
     try {
-      const res = await fetch("/api/requests", {
+      await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
+          ...form,
+          skills: form.skills.split(",").map((s) => s.trim()),
+          industries: form.industries,
+          benefits: form.benefits,
+          postedAt: Date.now(),
+        }),
       });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
       setStatus("sent");
     } catch (err: any) {
       setError(err.message || "Failed to submit");
@@ -108,45 +196,52 @@ export default function PostAJobPage() {
     );
   }
 
+  /* ────────── render ────────── */
   return (
     <div className={styles.container}>
-      <h1>Post a Job Request</h1>
+      <h1 className={styles.title}>Post a Job Request</h1>
+      <CsvUploadPanel />
+
+
+      {/*  manual form  */}
       {error && <p className={styles.error}>{error}</p>}
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <form className={styles.formGrid} onSubmit={handleSubmit}>
+        {/* identical form fields as before … */}
+        {/* Row 1 */}
         <input
           name="title"
           placeholder="Title"
           value={form.title}
-          onChange={handleChange}
+          onChange={onChange}
           required
         />
         <input
           name="company"
           placeholder="Company"
           value={form.company}
-          onChange={handleChange}
+          onChange={onChange}
           required
         />
+        {/* Row 2 */}
         <input
           name="city"
           placeholder="City"
           value={form.city}
-          onChange={handleChange}
+          onChange={onChange}
           required
         />
         <input
           name="country"
           placeholder="Country"
           value={form.country}
-          onChange={handleChange}
+          onChange={onChange}
           required
         />
-
-        <select
-          name="officeType"
-          value={form.officeType}
-          onChange={handleChange}
-        >
+        {/* Row 3 */}
+        <select name="officeType" value={form.officeType} onChange={onChange} required>
+          <option value="" disabled>
+            Location Type (Select one)
+          </option>
           <option>Remote</option>
           <option>Hybrid</option>
           <option>In-Office</option>
@@ -156,8 +251,12 @@ export default function PostAJobPage() {
         <select
           name="experienceLevel"
           value={form.experienceLevel}
-          onChange={handleChange}
+          onChange={onChange}
+          required
         >
+          <option value="" disabled>
+            Select Experience Level
+          </option>
           <option>Intern</option>
           <option>Entry-level</option>
           <option>Associate/Mid-level</option>
@@ -165,91 +264,129 @@ export default function PostAJobPage() {
           <option>Managerial</option>
           <option>Executive</option>
         </select>
-
+        {/* Row 4 */}
         <select
           name="employmentType"
           value={form.employmentType}
-          onChange={handleChange}
+          onChange={onChange}
+          required
         >
+          <option value="" disabled>
+            Select Employment Type
+          </option>
           <option>Full-time</option>
           <option>Part-time</option>
           <option>Contract</option>
           <option>Temporary</option>
           <option>Freelance</option>
         </select>
-
-        <input
-          name="industry"
-          placeholder="Industry / Job Sector"
-          value={form.industry}
-          onChange={handleChange}
-        />
-
-        <label className={styles.checkbox}>
+        <div className={styles.fullWidth}>
+          <p className={styles.label}>Industry (up to 3):</p>
+          <div className={styles.checkboxGroup}>
+            {["Tech", "Marketing", "Finance", "Healthcare", "Education"].map((opt) => (
+              <label key={opt}>
+                <input
+                  type="checkbox"
+                  checked={form.industries.includes(opt)}
+                  onChange={() => toggleArr("industries", opt, 3)}
+                />{" "}
+                {opt}
+              </label>
+            ))}
+          </div>
+        </div>
+        {/* Visa */}
+        <label className={styles.fullWidth}>
           <input
-            name="visa"
             type="checkbox"
+            name="visa"
             checked={form.visa}
-            onChange={handleChange}
-          />
+            onChange={onChange}
+          />{" "}
           Visa Sponsorship Available
         </label>
-
-        <select
-          name="benefits"
-          multiple
-          value={form.benefits}
-          onChange={handleChange}
-        >
-          <option>Health insurance</option>
-          <option>Paid leave</option>
-          <option>Flexible working hours</option>
-          <option>Stock options</option>
-        </select>
-
+        {/* Benefits */}
+        <div className={styles.fullWidth}>
+          <p className={styles.label}>Benefits:</p>
+          <div className={styles.checkboxGroup}>
+            {benefitOptions.map((b) => (
+              <label key={b}>
+                <input
+                  type="checkbox"
+                  checked={form.benefits.includes(b)}
+                  onChange={() => toggleArr("benefits", b)}
+                />{" "}
+                {b}
+              </label>
+            ))}
+          </div>
+        </div>
+        {/* Row 5 */}
         <input
+          className={styles.fullWidth}
           name="skills"
           placeholder="Skills (comma-separated)"
           value={form.skills}
-          onChange={handleChange}
+          onChange={onChange}
         />
-
         <input
+          className={styles.fullWidth}
           name="url"
-          placeholder="URL"
+          placeholder="Application URL"
           value={form.url}
-          onChange={handleChange}
+          onChange={onChange}
         />
-
-        <input
+        {/* Row 6 */}
+        <select
           name="currency"
-          placeholder="Currency"
           value={form.currency}
-          onChange={handleChange}
-        />
-
+          onChange={onChange}
+          required
+        >
+          <option value="" disabled>
+            Choose currency
+          </option>
+          {currencyOptions.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.label}
+            </option>
+          ))}
+        </select>
         <div className={styles.salaryRow}>
           <input
             name="salaryLow"
-            placeholder="Salary Low"
+            placeholder="Low"
             value={form.salaryLow}
-            onChange={handleChange}
+            onChange={onChange}
           />
           <span>–</span>
           <input
             name="salaryHigh"
-            placeholder="Salary High"
+            placeholder="High"
             value={form.salaryHigh}
-            onChange={handleChange}
+            onChange={onChange}
           />
         </div>
-
-        <select name="type" value={form.type} onChange={handleChange} required>
+        {/* Row 7 */}
+        <select
+          name="type"
+          value={form.type}
+          onChange={onChange}
+          className={styles.fullWidth}
+          required
+        >
+          <option value="" disabled>
+            Choose opportunity type
+          </option>
           <option value="job">Job</option>
           <option value="internship">Internship</option>
         </select>
-
-        <button type="submit" disabled={status === "sending"}>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={status === "sending"}
+          className={`${styles.button} ${styles.primary} ${styles.fullWidth}`}
+        >
           {status === "sending" ? "Sending…" : "Submit Request"}
         </button>
       </form>

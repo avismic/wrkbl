@@ -1,11 +1,32 @@
-/* src/components/Header.module.css */
-
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4rem;              /* fixed height */
+  background: #4baaf3;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.spacer {
+  height: 4rem;              /* same as .header height */
+}
+
+.inner {
+  box-sizing: border-box;    /* include padding in width calculation */
+  width: 100%;
+  padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
-  background: #4baaf3; /* your brand blue */
+}
+
+/* Tighter padding on mobile */
+@media (max-width: 768px) {
+  .inner {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .brand {
@@ -18,18 +39,16 @@
   margin-left: 0.5rem;
   font-size: 1.25rem;
   font-weight: bold;
-  color: white;
+  color: #fff;
 }
 
-.nav{
+.nav {
   display: flex;
-  gap: 4rem;
-  margin-right: 2rem;
+  gap: 2rem;
 }
 
 .nav a {
-  margin-left: 0;
-  color: white;
+  color: #fff;
   text-decoration: none;
   font-weight: 500;
 }
@@ -38,3 +57,46 @@
   text-decoration: underline;
 }
 
+.mobileMenuButton {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Mobile-specific nav behavior */
+@media (max-width: 768px) {
+  .mobileMenuButton {
+    display: block;
+  }
+
+  .nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #4baaf3;
+    flex-direction: column;
+    align-items: center;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    gap: 0;
+    margin: -3.8%;
+    padding-bottom: 1rem;
+  }
+
+  .navActive {
+    max-height: 200px;       /* expand when open */
+    transition: max-height 0.3s ease-in;
+  }
+
+  .nav a {
+    width: 100%;
+    padding: 1rem 0;
+    text-align: center;
+    margin: 0;
+  }
+}

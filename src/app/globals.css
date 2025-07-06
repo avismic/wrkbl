@@ -8,6 +8,7 @@
 :root {
   --background: #808080;
   --foreground: #171717;
+  --header-height: 4rem;    /* ← new variable for header height */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -15,6 +16,7 @@
     /* Keep the same grey in dark mode (or pick a darker grey if you prefer) */
     --background: #202020;
     --foreground: #ededed;
+    --header-height: 4rem;
   }
 }
 
@@ -27,6 +29,12 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
 }
 
 /* --- Sticky footer via Flexbox --- */
@@ -38,4 +46,5 @@ body {
 
 .pageContent {
   flex: 1;
+  padding-top: var(--header-height);  /* ← pushes all of <main> below the fixed header */
 }

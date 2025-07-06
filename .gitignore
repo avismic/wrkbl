@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+"mydb.sqlite" 
+".env.local" 
+"node_modules/" 

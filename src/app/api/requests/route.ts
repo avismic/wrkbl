@@ -1,95 +1,173 @@
 // src/app/api/requests/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { buildGeminiPrompt } from "@/lib/geminiPrompt";
+
+// ─── Gemini setup ──────────────────────────────────────────────
+const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+// ─── helpers ───────────────────────────────────────────────────
+const csv = (arr: string[] = []) => arr.join(",");
+const colsList = [
+  "id",
+  "title",
+  "company",
+  "city",
+  "country",
+  `"officeType"`,
+  `"experienceLevel"`,
+  `"employmentType"`,
+  "industry",
+  "visa",
+  "benefits",
+  "skills",
+  "url",
+  `"postedAt"`,
+  "remote",
+  "type",
+  `"salaryLow"`,
+  `"salaryHigh"`,
+  "currency",
+];
+const cols = colsList.join(",");
+const placeholders = colsList.map((_, i) => `$${i + 1}`).join(",");
 
 export async function GET() {
-  const db = await openDb();
-  const rows: any[] = await db.all(`
-    SELECT
-      id, title, company,
-      city, country,
-      officeType, experienceLevel, employmentType, industry,
-      visa, benefits,
-      skills, url, postedAt,
-      remote, type, salaryLow, salaryHigh, currency
-    FROM requests
-    ORDER BY postedAt DESC
-  `);
+  const pool = await openDb();
+  const { rows } = await pool.query(
+    `SELECT ${cols} FROM requests ORDER BY "postedAt" DESC`
+  );
 
   return NextResponse.json(
-    rows.map((r) => ({
-      id: r.id,
-      title: r.title,
-      company: r.company,
-      city: r.city,
-      country: r.country,
-      officeType: r.officeType,
-      experienceLevel: r.experienceLevel,
-      employmentType: r.employmentType,
-      industry: r.industry,
-      visa: Boolean(r.visa),
-      benefits: r.benefits.split(",").map((b: string) => b.trim()),
-      skills: r.skills.split(",").map((s: string) => s.trim()),
-      url: r.url,
-      postedAt: r.postedAt,
-      remote: Boolean(r.remote),
+    rows.map((r: any) => ({
+      ...r,
+      visa: !!r.visa,
+      remote: !!r.remote,
+      benefits: r.benefits.split(",").filter(Boolean),
+      skills: r.skills.split(",").filter(Boolean),
       type: r.type === "i" ? "internship" : "job",
-      salaryLow: r.salaryLow,
-      salaryHigh: r.salaryHigh,
-      currency: r.currency,
     }))
   );
 }
 
 export async function POST(req: NextRequest) {
-  const data = await req.json();
-  const db = await openDb();
-  const sql = `
-    INSERT INTO requests (
-      id, title, company,
-      city, country,
-      officeType, experienceLevel, employmentType, industry,
-      visa, benefits,
-      skills, url, postedAt,
-      remote, type, salaryLow, salaryHigh, currency
-    ) VALUES (
-      ?, ?, ?,
-      ?, ?,
-      ?, ?, ?, ?,
-      ?, ?,
-      ?, ?, ?,
-      ?, ?, ?, ?, ?
-    )
-  `.trim();
+  const incoming = await req.json();
+  const rowsData = Array.isArray(incoming) ? incoming : [incoming];
 
-  const stmt = await db.prepare(sql);
+  // 1 · Gemini review
+  const prompt = buildGeminiPrompt(
+    rowsData.map((j) => ({
+      id: j.id,
+      title: j.title,
+      company: j.company,
+      url: j.url,
+      salaryLow: j.salaryLow,
+      salaryHigh: j.salaryHigh,
+    })),
+    "requests"
+  );
+
+  let verdicts: Record<string, string> | null = null;
   try {
-    for (const j of Array.isArray(data) ? data : [data]) {
-      await stmt.run(
-        j.id,
-        j.title,
-        j.company,
-        j.city,
-        j.country,
-        j.officeType,
-        j.experienceLevel,
-        j.employmentType,
-        j.industry,
-        j.visa ? 1 : 0,
-        j.benefits.join(","),
-        j.skills.join(","),
-        j.url,
-        j.postedAt,
-        j.remote ? 1 : 0,
-        j.type === "internship" ? "i" : "j",
-        j.salaryLow,
-        j.salaryHigh,
-        j.currency
-      );
-    }
-  } finally {
-    await stmt.finalize();
+    const rsp = await model.generateContent(prompt);
+    const txt = rsp
+      .response.text()
+      .trim()
+      .replace(/^```[\s\S]*?\n/, "")
+      .replace(/```$/, "")
+      .trim();
+    verdicts = JSON.parse(txt);
+  } catch {
+    verdicts = null;
   }
 
-  return NextResponse.json({ ok: true }, { status: 201 });
+  const validIds: string[] = [];
+  const spamIds: string[] = [];
+  if (verdicts) {
+    for (const [id, v] of Object.entries(verdicts)) {
+      (v === "valid" ? validIds : spamIds).push(id);
+    }
+  } else {
+    spamIds.push(...rowsData.map((r) => r.id));
+  }
+
+  // 2 · DB writes inside manual transaction
+  const pool = await openDb();
+  await pool.query("BEGIN");
+  try {
+    // a) valid → jobs
+    if (validIds.length) {
+      for (const j of rowsData.filter((r) => validIds.includes(r.id))) {
+        const values = [
+          j.id,
+          j.title,
+          j.company,
+          j.city,
+          j.country,
+          j.officeType,
+          j.experienceLevel,
+          j.employmentType,
+          csv(j.industries),
+          j.visa,
+          csv(j.benefits),
+          csv(j.skills),
+          j.url,
+          j.postedAt,
+          j.remote ?? false,               // <-- now defaults to false, never null
+          j.type === "internship" ? "i" : "j",
+          j.salaryLow,
+          j.salaryHigh,
+          j.currency,
+        ];
+        await pool.query(
+          `INSERT INTO jobs (${cols}) VALUES (${placeholders})`,
+          values
+        );
+      }
+    }
+
+    // b) spam → requests
+    if (spamIds.length) {
+      for (const j of rowsData.filter((r) => spamIds.includes(r.id))) {
+        const values = [
+          j.id,
+          j.title,
+          j.company,
+          j.city,
+          j.country,
+          j.officeType,
+          j.experienceLevel,
+          j.employmentType,
+          csv(j.industries),
+          j.visa,
+          csv(j.benefits),
+          csv(j.skills),
+          j.url,
+          j.postedAt,
+          j.remote ?? false,               // <-- and here too
+          j.type === "internship" ? "i" : "j",
+          j.salaryLow,
+          j.salaryHigh,
+          j.currency,
+        ];
+        await pool.query(
+          `INSERT INTO requests (${cols}) VALUES (${placeholders})`,
+          values
+        );
+      }
+    }
+
+    await pool.query("COMMIT");
+  } catch (err) {
+    await pool.query("ROLLBACK");
+    throw err;
+  }
+
+  // 3 · response
+  return NextResponse.json(
+    { posted: validIds, queued: spamIds },
+    { status: 201 }
+  );
 }

@@ -4,11 +4,10 @@ import { openDb } from "@/lib/db";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const db = await openDb();
-  const stmt = await db.prepare(`DELETE FROM jobs WHERE id = ?`);
-  await stmt.run(params.id);
-  await stmt.finalize();
+  const { id } = await params;
+  const pool = await openDb();
+  await pool.query(`DELETE FROM jobs WHERE id = $1`, [id]);
   return NextResponse.json({ success: true });
 }

@@ -1,63 +1,64 @@
 // scripts/init-db.js
-const { openDb } = require("../lib/db");
+require('dotenv').config();
+const { openDb } = require('../lib/db');
 
 (async () => {
   try {
-    const db = await openDb();
+    const pool = await openDb();
 
-    // -- jobs table --
-    await db.exec(`DROP TABLE IF EXISTS jobs;`);
-    await db.exec(`
+    // ─── jobs table ────────────────────────────────────────────────
+    await pool.query('DROP TABLE IF EXISTS jobs;');
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS jobs (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         company TEXT NOT NULL,
         city TEXT NOT NULL,
         country TEXT NOT NULL,
-        officeType TEXT NOT NULL,
-        experienceLevel TEXT NOT NULL,
-        employmentType TEXT NOT NULL,
-        industry TEXT NOT NULL,
-        visa INTEGER NOT NULL DEFAULT 0,
+        "officeType" TEXT NOT NULL,
+        "experienceLevel" TEXT NOT NULL,
+        "employmentType" TEXT NOT NULL,
+        industry TEXT NOT NULL DEFAULT '',
+        visa BOOLEAN NOT NULL DEFAULT false,
         benefits TEXT NOT NULL,
         skills TEXT NOT NULL,
         url TEXT NOT NULL,
-        postedAt INTEGER NOT NULL,
-        remote INTEGER NOT NULL DEFAULT 0,
+        "postedAt" BIGINT NOT NULL,
+        remote BOOLEAN NOT NULL DEFAULT false,
         type TEXT NOT NULL DEFAULT 'j',
-        salaryLow INTEGER NOT NULL DEFAULT 0,
-        salaryHigh INTEGER NOT NULL DEFAULT 0,
+        "salaryLow" INTEGER NOT NULL DEFAULT 0,
+        "salaryHigh" INTEGER NOT NULL DEFAULT 0,
         currency TEXT NOT NULL DEFAULT '$'
       );
     `);
-    console.log("✅ jobs table initialized with all new fields");
+    console.log('✅ jobs table initialized with all new fields');
 
-    // -- requests table --
-    await db.exec(`DROP TABLE IF EXISTS requests;`);
-    await db.exec(`
+    // ─── requests table ────────────────────────────────────────────
+    await pool.query('DROP TABLE IF EXISTS requests;');
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS requests (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         company TEXT NOT NULL,
         city TEXT NOT NULL,
         country TEXT NOT NULL,
-        officeType TEXT NOT NULL,
-        experienceLevel TEXT NOT NULL,
-        employmentType TEXT NOT NULL,
-        industry TEXT NOT NULL,
-        visa INTEGER NOT NULL DEFAULT 0,
+        "officeType" TEXT NOT NULL,
+        "experienceLevel" TEXT NOT NULL,
+        "employmentType" TEXT NOT NULL,
+        industry TEXT NOT NULL DEFAULT '',
+        visa BOOLEAN NOT NULL DEFAULT false,
         benefits TEXT NOT NULL,
         skills TEXT NOT NULL,
         url TEXT NOT NULL,
-        postedAt INTEGER NOT NULL,
-        remote INTEGER NOT NULL DEFAULT 0,
+        "postedAt" BIGINT NOT NULL,
+        remote BOOLEAN NOT NULL DEFAULT false,
         type TEXT NOT NULL DEFAULT 'j',
-        salaryLow INTEGER NOT NULL DEFAULT 0,
-        salaryHigh INTEGER NOT NULL DEFAULT 0,
+        "salaryLow" INTEGER NOT NULL DEFAULT 0,
+        "salaryHigh" INTEGER NOT NULL DEFAULT 0,
         currency TEXT NOT NULL DEFAULT '$'
       );
     `);
-    console.log("✅ requests table initialized with all new fields");
+    console.log('✅ requests table initialized with all new fields');
 
     process.exit(0);
   } catch (err) {

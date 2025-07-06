@@ -7,6 +7,8 @@ import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import TrashButton from "@/components/TrashButton";
+import styles from "./AdminPageClient.module.css";
 
 interface Job {
   id: string;
@@ -28,101 +30,80 @@ interface Job {
     | "Contract"
     | "Temporary"
     | "Freelance";
-  industry: string;
+  industries: string[];
   visa: boolean;
   benefits: string[];
   skills: string[];
   url: string;
   postedAt: number;
-  remote: boolean; // retained for backwards compatibility
+  remote: boolean;
   type: "job" | "internship";
   currency: string;
   salaryLow: number;
   salaryHigh: number;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// Fixed option lists:
+const industryOptions = [
+  "Tech",
+  "Marketing",
+  "Finance",
+  "Healthcare",
+  "Education",
+];
+const benefitOptions = [
+  "Health insurance",
+  "Paid leave",
+  "Flexible working hours",
+  "Stock options",
+];
+const currencyOptions = [
+  { code: "USD", label: "USD ($)" },
+  { code: "EUR", label: "EUR (€)" },
+  { code: "JPY", label: "JPY (¥)" },
+  { code: "GBP", label: "GBP (£)" },
+  { code: "AUD", label: "AUD (A$)" },
+  { code: "CAD", label: "CAD (C$)" },
+  { code: "CHF", label: "CHF (CHF)" },
+  { code: "CNY", label: "CNY (¥)" },
+  { code: "SEK", label: "SEK (kr)" },
+  { code: "NZD", label: "NZD (NZ$)" },
+];
 
 export default function AdminPageClient() {
   const router = useRouter();
-
   const {
     data: jobs = [],
     error,
     mutate,
   } = useSWR<Job[]>("/api/jobs", fetcher);
   const { data: requests = [] } = useSWR<any[]>("/api/requests", fetcher);
+  const { data: trash = [] } = useSWR<any[]>("/api/trash", fetcher);
   const pendingCount = requests.length;
+  const trashCount = trash.length;
 
-  // Pagination state for Load More
-  const [visibleCount, setVisibleCount] = useState(10);
-
-  // Search/filter
+  /* ---------------- Search & pagination ---------------- */
   const [query, setQuery] = useState("");
-  const filtered = jobs.filter((job) => {
+  const [visibleCount, setVisibleCount] = useState(10);
+  const filtered = jobs.filter((j) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (
-      job.title.toLowerCase().includes(q) ||
-      job.company.toLowerCase().includes(q) ||
-      `${job.city}-${job.country}`.toLowerCase().includes(q) ||
-      job.skills.some((s) => s.toLowerCase().includes(q))
+      j.title.toLowerCase().includes(q) ||
+      j.company.toLowerCase().includes(q) ||
+      `${j.city}, ${j.country}`.toLowerCase().includes(q) ||
+      j.skills.some((s) => s.toLowerCase().includes(q))
     );
   });
   const visibleJobs = filtered.slice(0, visibleCount);
 
-  // CSV upload state
+  /* ---------------- CSV upload ---------------- */
   const [parsedJobs, setParsedJobs] = useState<Job[]>([]);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Manual-add form
-  const [manual, setManual] = useState({
-    title: "",
-    company: "",
-    city: "",
-    country: "",
-    officeType: "Remote" as Job["officeType"],
-    experienceLevel: "Intern" as Job["experienceLevel"],
-    employmentType: "Full-time" as Job["employmentType"],
-    industry: "Tech",
-    visa: false,
-    benefits: ["Health insurance"],
-    skills: "",
-    url: "",
-    currency: "$",
-    salaryLow: "",
-    salaryHigh: "",
-    type: "job" as "job" | "internship",
-  });
-
-  // Inline-edit state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<Job>({
-    id: "",
-    title: "",
-    company: "",
-    city: "",
-    country: "",
-    officeType: "Remote",
-    experienceLevel: "Intern",
-    employmentType: "Full-time",
-    industry: "Tech",
-    visa: false,
-    benefits: [],
-    skills: [],
-    url: "",
-    postedAt: 0,
-    remote: false,
-    type: "job",
-    currency: "$",
-    salaryLow: 0,
-    salaryHigh: 0,
-  });
-
-  if (error) return <p>Error loading jobs</p>;
-
-  // --- CSV Handling ---
   const handleCsv = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return setCsvError("No file selected");
@@ -132,32 +113,37 @@ export default function AdminPageClient() {
       complete: ({ data, errors }) => {
         if (errors.length) {
           setCsvError(errors.map((er) => er.message).join("; "));
-          return;
+        } else {
+          const list: Job[] = (data as any[]).map((row) => ({
+            id:
+              uuidv4().slice(0, 4) +
+              "-" +
+              Math.floor(100 + Math.random() * 900),
+            title: row.title,
+            company: row.company,
+            city: row.city,
+            country: row.country,
+            officeType: row.officeType,
+            experienceLevel: row.experienceLevel,
+            employmentType: row.employmentType,
+            industries:
+              row.industries?.split(",").map((i: string) => i.trim()) ?? [],
+            visa: String(row.visa).toLowerCase() === "yes",
+            benefits:
+              row.benefits?.split(",").map((b: string) => b.trim()) ?? [],
+            skills: row.skills?.split(",").map((s: string) => s.trim()) ?? [],
+            url: row.url,
+            postedAt: Date.now(),
+            remote: String(row.officeType).toLowerCase().includes("remote"),
+            type:
+              String(row["j/i"]).toLowerCase() === "i" ? "internship" : "job",
+            currency: row.currency,
+            salaryLow: parseInt(row.salaryLow, 10) || 0,
+            salaryHigh: parseInt(row.salaryHigh, 10) || 0,
+          }));
+          setParsedJobs(list);
+          setCsvError(null);
         }
-        const list: Job[] = (data as any[]).map((row) => ({
-          id:
-            uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
-          title: row.title,
-          company: row.company,
-          city: row.city,
-          country: row.country,
-          officeType: row.officeType,
-          experienceLevel: row.experienceLevel,
-          employmentType: row.employmentType,
-          industry: row.industry,
-          visa: String(row.visa).toLowerCase() === "yes",
-          benefits: row.benefits?.split(",").map((b: string) => b.trim()) ?? [],
-          skills: row.skills?.split(",").map((s: string) => s.trim()) ?? [],
-          url: row.url,
-          postedAt: Date.now(),
-          remote: String(row.officeType).toLowerCase().includes("remote"),
-          type: String(row["j/i"]).toLowerCase() === "i" ? "internship" : "job",
-          currency: row.currency || "$",
-          salaryLow: parseInt(row.salaryLow, 10) || 0,
-          salaryHigh: parseInt(row.salaryHigh, 10) || 0,
-        }));
-        setParsedJobs(list);
-        setCsvError(null);
       },
       error: (err) => setCsvError(err.message),
     });
@@ -168,10 +154,9 @@ export default function AdminPageClient() {
     setUploading(true);
     const payload = parsedJobs.map((j) => ({
       ...j,
-      // convert to your API format (j/i, remote flag)
       type: j.type === "internship" ? "i" : "j",
-      remote: j.remote,
       benefits: j.benefits.join(","),
+      industries: j.industries.join(","),
     }));
     await fetch("/api/jobs", {
       method: "POST",
@@ -183,28 +168,98 @@ export default function AdminPageClient() {
     mutate();
   };
 
-  // --- Manual Add ---
-  const addManual = async () => {
+  /* ---------------- Form (add / edit) ---------------- */
+  const emptyForm = {
+    title: "",
+    company: "",
+    city: "",
+    country: "",
+    officeType: "",
+    experienceLevel: "",
+    employmentType: "",
+    industries: [] as string[],
+    visa: false,
+    benefits: [] as string[],
+    skills: "",
+    url: "",
+    currency: "",
+    salaryLow: "",
+    salaryHigh: "",
+    type: "" as "job" | "internship" | "",
+  };
+
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const startEdit = (j: Job) => {
+    setEditingId(j.id);
+    setForm({
+      title: j.title,
+      company: j.company,
+      city: j.city,
+      country: j.country,
+      officeType: j.officeType,
+      experienceLevel: j.experienceLevel,
+      employmentType: j.employmentType,
+      industries: [...j.industries],
+      visa: j.visa,
+      benefits: [...j.benefits],
+      skills: j.skills.join(", "),
+      url: j.url,
+      currency: j.currency,
+      salaryLow: String(j.salaryLow),
+      salaryHigh: String(j.salaryHigh),
+      type: j.type,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelForm = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const toggleArray = (key: "industries" | "benefits", val: string) => {
+    setForm((f) => {
+      const next = new Set(f[key]);
+      next.has(val) ? next.delete(val) : next.add(val);
+      if (key === "industries" && next.size > 3) return f;
+      return { ...f, [key]: Array.from(next) };
+    });
+  };
+
+  const addJob = async () => {
     const newJob: Job = {
       id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
-      title: manual.title,
-      company: manual.company,
-      city: manual.city,
-      country: manual.country,
-      officeType: manual.officeType,
-      experienceLevel: manual.experienceLevel,
-      employmentType: manual.employmentType,
-      industry: manual.industry,
-      visa: manual.visa,
-      benefits: manual.benefits,
-      skills: manual.skills.split(",").map((s) => s.trim()),
-      url: manual.url,
+      title: form.title,
+      company: form.company,
+      city: form.city,
+      country: form.country,
+      officeType: form.officeType as Job["officeType"],
+      experienceLevel: form.experienceLevel as Job["experienceLevel"],
+      employmentType: form.employmentType as Job["employmentType"],
+      industries: form.industries,
+      visa: form.visa,
+      benefits: form.benefits,
+      skills: form.skills.split(",").map((s) => s.trim()),
+      url: form.url,
       postedAt: Date.now(),
-      remote: manual.officeType.toLowerCase().includes("remote"),
-      type: manual.type,
-      currency: manual.currency,
-      salaryLow: parseInt(manual.salaryLow, 10) || 0,
-      salaryHigh: parseInt(manual.salaryHigh, 10) || 0,
+      remote: form.officeType.toLowerCase().includes("remote"),
+      type:
+        form.experienceLevel === "Intern"
+          ? "internship"
+          : (form.type as "job" | "internship"),
+      currency: form.currency,
+      salaryLow: parseInt(form.salaryLow, 10) || 0,
+      salaryHigh: parseInt(form.salaryHigh, 10) || 0,
     };
     await fetch("/api/jobs", {
       method: "POST",
@@ -214,55 +269,50 @@ export default function AdminPageClient() {
           ...newJob,
           type: newJob.type === "internship" ? "i" : "j",
           benefits: newJob.benefits.join(","),
+          industries: newJob.industries.join(","),
         },
       ]),
     });
-    setManual({
-      title: "",
-      company: "",
-      city: "",
-      country: "",
-      officeType: "Remote",
-      experienceLevel: "Intern",
-      employmentType: "Full-time",
-      industry: "Tech",
-      visa: false,
-      benefits: ["Health insurance"],
-      skills: "",
-      url: "",
-      currency: "$",
-      salaryLow: "",
-      salaryHigh: "",
-      type: "job",
-    });
     mutate();
-  };
-
-  // --- Edit / Delete ---
-  const startEdit = (job: Job) => {
-    setEditingId(job.id);
-    setEditingData(job);
+    setForm(emptyForm);
   };
 
   const saveEdit = async () => {
     if (!editingId) return;
-    const payload = {
-      ...editingData,
-      type: editingData.type === "internship" ? "i" : "j",
-      remote: editingData.officeType.toLowerCase().includes("remote"),
-      benefits: editingData.benefits.join(","),
-    };
     await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([payload]),
+      body: JSON.stringify([
+        {
+          id: editingId,
+          title: form.title,
+          company: form.company,
+          city: form.city,
+          country: form.country,
+          officeType: form.officeType,
+          experienceLevel: form.experienceLevel,
+          employmentType: form.employmentType,
+          industries: form.industries.join(","),
+          visa: form.visa,
+          benefits: form.benefits.join(","),
+          skills: form.skills.split(",").map((s) => s.trim()),
+          url: form.url,
+          postedAt: Date.now(),
+          remote: form.officeType.toLowerCase().includes("remote"),
+          type:
+            form.experienceLevel === "Intern"
+              ? "i"
+              : form.type === "internship"
+              ? "i"
+              : "j",
+          currency: form.currency,
+          salaryLow: parseInt(form.salaryLow, 10) || 0,
+          salaryHigh: parseInt(form.salaryHigh, 10) || 0,
+        },
+      ]),
     });
-    setEditingId(null);
     mutate();
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
+    cancelForm();
   };
 
   const deleteJob = async (id: string) => {
@@ -270,132 +320,126 @@ export default function AdminPageClient() {
     mutate();
   };
 
-  return (
-    <div style={{ maxWidth: 900, margin: "2rem auto", padding: "1rem" }}>
-      <h1>Admin Console</h1>
-      <button
-        onClick={() => signOut({ callbackUrl: "/admin/login" })}
-        style={{
-          padding: "0.5rem 1rem",
-          background: "#e74c3c",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
-      >
-        Log out
-      </button>
-      <button
-        onClick={() => router.push("/post-requests")}
-        style={{
-          position: "relative",
-          padding: "0.5rem 1rem",
-          background: "#4baaf3",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-          marginLeft: "7px",
-        }}
-      >
-        Requests
-        {pendingCount > 0 && (
-          <span
-            style={{
-              position: "absolute",
-              top: "-6px",
-              right: "-4px",
-              background: "#e74c3c",
-              color: "white",
-              fontSize: "0.6rem",
-              padding: "0.2rem 0.4rem",
-              borderRadius: "8px",
-            }}
-          >
-            {pendingCount}
-          </span>
-        )}
-      </button>
+  if (error) return <p>Error loading jobs</p>;
 
-      {/* Search */}
+  /* ---------------- JSX ---------------- */
+  return (
+    <div className={styles.container}>
+      <h1 className={styles.title}>Admin Console</h1>
+
+      {/* top buttons */}
+      <div className={styles.buttonGroup}>
+        <button
+          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          className={`${styles.button} ${styles.logout}`}
+        >
+          Log out
+        </button>
+
+        <button
+          onClick={() => router.push("/post-requests")}
+          className={`${styles.button} ${styles.primary}`}
+        >
+          Requests
+          {pendingCount > 0 && (
+            <span className={styles.badge}>{pendingCount}</span>
+          )}
+        </button>
+        <TrashButton count={trashCount} />
+      </div>
+
+      {/* search */}
       <input
         placeholder="Search jobs…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{ width: "100%", padding: "0.5rem", margin: "1rem 0" }}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setVisibleCount(10);
+        }}
+        className={styles.searchInput}
       />
 
-      {/* CSV Bulk Upload */}
-      <section style={{ marginBottom: "2rem" }}>
+      {/* CSV bulk upload */}
+      <section className={styles.section}>
         <h2>CSV Bulk Upload</h2>
         <input
           type="file"
           accept=".csv"
           onChange={handleCsv}
           disabled={uploading}
+          className={styles.fileInput}
         />
-        {csvError && <p style={{ color: "red" }}>{csvError}</p>}
+        {csvError && <p className={styles.error}>{csvError}</p>}
         {parsedJobs.length > 0 && (
-          <button onClick={uploadCsv} disabled={uploading}>
+          <button
+            onClick={uploadCsv}
+            disabled={uploading}
+            className={styles.uploadBtn}
+          >
             {uploading ? "Uploading…" : `Upload ${parsedJobs.length} Jobs`}
           </button>
         )}
       </section>
 
-      {/* Manual Add */}
-      <section
-        style={{
-          marginBottom: "2rem",
-          border: "1px solid #ccc",
-          padding: "1rem",
-        }}
-      >
-        <h2>Add Job Manually</h2>
-        <div style={{ display: "grid", gap: "0.5rem" }}>
+      {/* form */}
+      <section className={`${styles.section} ${styles.card}`}>
+        <h2>{editingId ? "Edit Job" : "Add Job Manually"}</h2>
+
+        <div className={styles.formGrid}>
+          {/* Row 1 */}
           <input
             placeholder="Title"
-            value={manual.title}
-            onChange={(e) => setManual({ ...manual, title: e.target.value })}
+            name="title"
+            value={form.title}
+            onChange={onChange}
           />
           <input
             placeholder="Company"
-            value={manual.company}
-            onChange={(e) => setManual({ ...manual, company: e.target.value })}
+            name="company"
+            value={form.company}
+            onChange={onChange}
           />
+
+          {/* Row 2 */}
           <input
             placeholder="City"
-            value={manual.city}
-            onChange={(e) => setManual({ ...manual, city: e.target.value })}
+            name="city"
+            value={form.city}
+            onChange={onChange}
           />
           <input
             placeholder="Country"
-            value={manual.country}
-            onChange={(e) => setManual({ ...manual, country: e.target.value })}
+            name="country"
+            value={form.country}
+            onChange={onChange}
           />
-          <select
-            value={manual.officeType}
-            onChange={(e) =>
-              setManual({
-                ...manual,
-                officeType: e.target.value as Job["officeType"],
-              })
-            }
-          >
+
+          {/* Row 3 */}
+          <select name="officeType" value={form.officeType} onChange={onChange}>
+            <option value="" disabled>
+              Location Type (Select one)
+            </option>
             <option>Remote</option>
             <option>Hybrid</option>
             <option>In-Office</option>
             <option>Remote-Anywhere</option>
           </select>
+
           <select
-            value={manual.experienceLevel}
-            onChange={(e) =>
-              setManual({
-                ...manual,
-                experienceLevel: e.target.value as Job["experienceLevel"],
-              })
-            }
+            name="experienceLevel"
+            value={form.experienceLevel}
+            onChange={(e) => {
+              onChange(e as any);
+              if (e.target.value === "Intern") {
+                setForm((f) => ({ ...f, type: "internship" }));
+              } else {
+                setForm((f) => ({ ...f, type: "" }));
+              }
+            }}
           >
+            <option value="" disabled>
+              Select Experience Level
+            </option>
             <option>Intern</option>
             <option>Entry-level</option>
             <option>Associate/Mid-level</option>
@@ -403,397 +447,201 @@ export default function AdminPageClient() {
             <option>Managerial</option>
             <option>Executive</option>
           </select>
+
           <select
-            value={manual.employmentType}
-            onChange={(e) =>
-              setManual({
-                ...manual,
-                employmentType: e.target.value as Job["employmentType"],
-              })
-            }
+            name="employmentType"
+            value={form.employmentType}
+            onChange={onChange}
           >
+            <option value="" disabled>
+              Select Employment Type
+            </option>
             <option>Full-time</option>
             <option>Part-time</option>
             <option>Contract</option>
             <option>Temporary</option>
             <option>Freelance</option>
           </select>
-          <input
-            placeholder="Industry / Job Sector"
-            value={manual.industry}
-            onChange={(e) => setManual({ ...manual, industry: e.target.value })}
-          />
-          <label>
+
+          {/* Industry */}
+          <div style={{ gridColumn: "1 / span 2" }}>
+            <p style={{ margin: 0 }}>Industry (up to 3):</p>
+            <div className={styles.checkboxGroup}>
+              {industryOptions.map((opt) => (
+                <label key={opt}>
+                  <input
+                    type="checkbox"
+                    checked={form.industries.includes(opt)}
+                    onChange={() => toggleArray("industries", opt)}
+                  />{" "}
+                  {opt}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Visa */}
+          <label style={{ gridColumn: "1 / span 2" }}>
             <input
               type="checkbox"
-              checked={manual.visa}
-              onChange={(e) => setManual({ ...manual, visa: e.target.checked })}
+              name="visa"
+              checked={form.visa}
+              onChange={onChange}
             />{" "}
             Visa Sponsorship Available
           </label>
-          <select
-            multiple
-            value={manual.benefits}
-            onChange={(e) => {
-              const opts = Array.from(
-                e.target.selectedOptions,
-                (opt) => opt.value
-              );
-              setManual({ ...manual, benefits: opts });
-            }}
-          >
-            <option>Health insurance</option>
-            <option>Paid leave</option>
-            <option>Flexible working hours</option>
-            <option>Stock options</option>
-          </select>
+
+          {/* Benefits */}
+          <div style={{ gridColumn: "1 / span 2" }}>
+            <p style={{ margin: 0 }}>Benefits:</p>
+            <div className={styles.checkboxGroup}>
+              {benefitOptions.map((b) => (
+                <label key={b}>
+                  <input
+                    type="checkbox"
+                    checked={form.benefits.includes(b)}
+                    onChange={() => toggleArray("benefits", b)}
+                  />{" "}
+                  {b}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Skills / URL */}
           <input
             placeholder="Skills (comma-separated)"
-            value={manual.skills}
-            onChange={(e) => setManual({ ...manual, skills: e.target.value })}
+            name="skills"
+            value={form.skills}
+            onChange={onChange}
           />
           <input
-            placeholder="URL"
-            value={manual.url}
-            onChange={(e) => setManual({ ...manual, url: e.target.value })}
+            placeholder="Application URL"
+            name="url"
+            value={form.url}
+            onChange={onChange}
           />
-          <input
-            placeholder="Currency"
-            value={manual.currency}
-            onChange={(e) => setManual({ ...manual, currency: e.target.value })}
-          />
+
+          {/* Currency & salary */}
+          <select name="currency" value={form.currency} onChange={onChange}>
+            <option value="" disabled>
+              Choose currency
+            </option>
+            {currencyOptions.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <input
-              placeholder="Salary Low"
-              value={manual.salaryLow}
-              onChange={(e) =>
-                setManual({ ...manual, salaryLow: e.target.value })
-              }
+              placeholder="Low"
+              name="salaryLow"
+              value={form.salaryLow}
+              onChange={onChange}
+              style={{ flex: 1 }}
             />
+            <span>–</span>
             <input
-              placeholder="Salary High"
-              value={manual.salaryHigh}
-              onChange={(e) =>
-                setManual({ ...manual, salaryHigh: e.target.value })
-              }
+              placeholder="High"
+              name="salaryHigh"
+              value={form.salaryHigh}
+              onChange={onChange}
+              style={{ flex: 1 }}
             />
           </div>
-          <select
-            value={manual.type}
-            onChange={(e) =>
-              setManual({
-                ...manual,
-                type: e.target.value as "job" | "internship",
-              })
-            }
-          >
-            <option value="job">Job</option>
-            <option value="internship">Internship</option>
-          </select>
-          <button onClick={addManual}>Add Job</button>
+
+          {/* Opportunity type */}
+          {form.experienceLevel !== "Intern" && (
+            <select name="type" value={form.type} onChange={onChange}>
+              <option value="" disabled>
+                Choose opportunity type
+              </option>
+              <option value="job">Job</option>
+              <option value="internship">Internship</option>
+            </select>
+          )}
+        </div>
+
+        <div style={{ marginTop: "1rem" }}>
+          {editingId ? (
+            <>
+              <button
+                onClick={saveEdit}
+                className={`${styles.button} ${styles.primary}`}
+              >
+                Save Changes
+              </button>{" "}
+              <button
+                onClick={cancelForm}
+                className={`${styles.button} ${styles.logout}`}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={addJob}
+              className={`${styles.button} ${styles.primary}`}
+            >
+              Add Job
+            </button>
+          )}
         </div>
       </section>
 
-      {/* All Jobs Table */}
-      <section>
+      {/* Table */}
+      <section className={styles.section}>
         <h2>All Jobs</h2>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table className={styles.table}>
           <thead>
             <tr>
-              <th>ID</th>
               <th>Title</th>
               <th>Company</th>
-              <th>City</th>
-              <th>Country</th>
-              <th>Office Type</th>
+              <th>Location</th>
               <th>Experience</th>
               <th>Employment</th>
-              <th>Industry</th>
-              <th>Visa</th>
-              <th>Benefits</th>
-              <th>Skills</th>
-              <th>URL</th>
-              <th>Type</th>
-              <th>Salary</th>
               <th>Actions</th>
             </tr>
           </thead>
+
           <tbody>
-            {visibleJobs.map((job) => {
-              const isEditing = editingId === job.id;
-              return (
-                <tr key={job.id}>
-                  <td style={{ padding: "0.5rem" }}>{job.id}</td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.title}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            title: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      job.title
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.company}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            company: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      job.company
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.city}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            city: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      job.city
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.country}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            country: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      job.country
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <select
-                        value={editingData.officeType}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            officeType: e.target.value as Job["officeType"],
-                          })
-                        }
-                      >
-                        <option>Remote</option>
-                        <option>Hybrid</option>
-                        <option>In-Office</option>
-                        <option>Remote-Anywhere</option>
-                      </select>
-                    ) : (
-                      job.officeType
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <select
-                        value={editingData.experienceLevel}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            experienceLevel: e.target
-                              .value as Job["experienceLevel"],
-                          })
-                        }
-                      >
-                        <option>Intern</option>
-                        <option>Entry-level</option>
-                        <option>Associate/Mid-level</option>
-                        <option>Senior-level</option>
-                        <option>Managerial</option>
-                        <option>Executive</option>
-                      </select>
-                    ) : (
-                      editingData.experienceLevel
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <select
-                        value={editingData.employmentType}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            employmentType: e.target
-                              .value as Job["employmentType"],
-                          })
-                        }
-                      >
-                        <option>Full-time</option>
-                        <option>Part-time</option>
-                        <option>Contract</option>
-                        <option>Temporary</option>
-                        <option>Freelance</option>
-                      </select>
-                    ) : (
-                      job.employmentType
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.industry}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            industry: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      job.industry
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem", textAlign: "center" }}>
-                    {isEditing ? (
-                      <input
-                        type="checkbox"
-                        checked={editingData.visa}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            visa: e.target.checked,
-                          })
-                        }
-                      />
-                    ) : job.visa ? (
-                      "Y"
-                    ) : (
-                      ""
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <select
-                        multiple
-                        value={editingData.benefits}
-                        onChange={(e) => {
-                          const opts = Array.from(
-                            e.target.selectedOptions,
-                            (opt) => opt.value
-                          );
-                          setEditingData({
-                            ...editingData,
-                            benefits: opts,
-                          });
-                        }}
-                      >
-                        <option>Health insurance</option>
-                        <option>Paid leave</option>
-                        <option>Flexible working hours</option>
-                        <option>Stock options</option>
-                      </select>
-                    ) : (
-                      job.benefits.join(", ")
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.skills.join(", ")}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            skills: e.target.value
-                              .split(",")
-                              .map((s) => s.trim()),
-                          })
-                        }
-                      />
-                    ) : (
-                      job.skills.join(", ")
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <input
-                        value={editingData.url}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            url: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      job.url
-                    )}
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>
-                    {isEditing ? (
-                      <select
-                        value={editingData.type}
-                        onChange={(e) =>
-                          setEditingData({
-                            ...editingData,
-                            type: e.target.value as "job" | "internship",
-                          })
-                        }
-                      >
-                        <option value="job">Job</option>
-                        <option value="internship">Internship</option>
-                      </select>
-                    ) : (
-                      job.type.toUpperCase()
-                    )}
-                  </td>
-                  <td
-                    style={{ padding: "0.5rem" }}
-                  >{`${job.currency}${job.salaryLow} - ${job.currency}${job.salaryHigh}`}</td>
-                  <td
-                    style={{
-                      padding: "0.5rem",
-                      display: "flex",
-                      gap: "0.5rem",
-                    }}
+            {visibleJobs.map((j) => (
+              <tr key={j.id}>
+                <td>{j.title}</td>
+                <td>{j.company}</td>
+                <td>
+                  {j.city}, {j.country}
+                </td>
+                <td>{j.experienceLevel}</td>
+                <td>{j.employmentType}</td>
+                <td className={styles.actions}>
+                  <button
+                    onClick={() => startEdit(j)}
+                    className={`${styles.button} ${styles.edit}`}
                   >
-                    {editingId === job.id ? (
-                      <>
-                        <button onClick={saveEdit}>Save</button>
-                        <button onClick={cancelEdit}>Cancel</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => startEdit(job)}>Edit</button>
-                        <button onClick={() => deleteJob(job.id)}>
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteJob(j.id)}
+                    className={`${styles.button} ${styles.delete}`}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>
 
-      {/* Load More Button */}
+      {/* Load more */}
       {visibleCount < filtered.length && (
         <div style={{ textAlign: "center", marginTop: "1rem" }}>
           <button
-            onClick={() => setVisibleCount((prev) => prev + 10)}
-            style={{ padding: "0.5rem 1rem" }}
+            onClick={() => setVisibleCount((c) => c + 10)}
+            className={styles.loadMore}
           >
             Load More
           </button>
