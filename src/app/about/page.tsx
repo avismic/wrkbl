@@ -7,7 +7,7 @@ export default function AboutPage() {
       <h1 className={styles.heading}>About MayoCity</h1>
       <div className={styles.content}>
         <p>
-          MayoCity is a simple, no-nonsense job board built to connect great
+          MayoCity is a simple, no-nonsense job board built by Abhishek to connect great
           talent with forward-thinking companies. Our mission is to strip away
           the clutter and let you discover your next opportunity—quickly and
           directly.
