@@ -1,7 +1,6 @@
 // src/app/jobs/[id]/page.tsx
-'use client';
-
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { jobs } from "../../../data/jobs";
 
 interface Params {
@@ -9,8 +8,9 @@ interface Params {
 }
 
 export default function JobPage({ params }: { params: Params }) {
+  // 1) find the right job
   const job = jobs.find((j) => j.id === params.id);
-  if (!job) return notFound();
+  if (!job) notFound();
 
   return (
     <main style={{ padding: "2rem", maxWidth: "600px", margin: "0 auto" }}>
@@ -57,24 +57,32 @@ export default function JobPage({ params }: { params: Params }) {
         {job.salaryHigh.toLocaleString()}
       </p>
 
-      <button
-        style={{
-          marginTop: "1.5rem",
-          padding: "0.75rem 1.5rem",
-          fontSize: "1rem",
-          backgroundColor: "green",
-          color: "white",
-          border: "none",
-          borderRadius: "0.25rem",
-          cursor: "pointer",
-        }}
-        onClick={() => window.open(job.url, "_blank")}
+      {/* 2) Open in new tab via a normal anchor */}
+      <a
+        href={job.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ textDecoration: "none" }}
       >
-        Apply Now
-      </button>
+        <button
+          style={{
+            marginTop: "1.5rem",
+            padding: "0.75rem 1.5rem",
+            fontSize: "1rem",
+            backgroundColor: "green",
+            color: "white",
+            border: "none",
+            borderRadius: "0.25rem",
+            cursor: "pointer",
+          }}
+        >
+          Apply Now
+        </button>
+      </a>
 
+      {/* 3) Back link using Next.js <Link> */}
       <p style={{ marginTop: "1rem" }}>
-        ← <a href="/">Back to Listings</a>
+        ← <Link href="/">Back to Listings</Link>
       </p>
     </main>
   );
