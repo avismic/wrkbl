@@ -3,12 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { jobs } from "../../../data/jobs";
 
-interface Params {
-  id: string;
-}
-
-export default function JobPage({ params }: { params: Params }) {
-  // 1) find the right job
+export default function JobPage({ params }) {
+  // now `params.id` is inferred correctly
   const job = jobs.find((j) => j.id === params.id);
   if (!job) notFound();
 
@@ -57,7 +53,6 @@ export default function JobPage({ params }: { params: Params }) {
         {job.salaryHigh.toLocaleString()}
       </p>
 
-      {/* 2) Open in new tab via a normal anchor */}
       <a
         href={job.url}
         target="_blank"
@@ -80,7 +75,6 @@ export default function JobPage({ params }: { params: Params }) {
         </button>
       </a>
 
-      {/* 3) Back link using Next.js <Link> */}
       <p style={{ marginTop: "1rem" }}>
         ← <Link href="/">Back to Listings</Link>
       </p>
