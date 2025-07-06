@@ -72,8 +72,8 @@ export async function POST(req: NextRequest) {
   let verdicts: Record<string, string> | null = null;
   try {
     const rsp = await model.generateContent(prompt);
-    const txt = rsp
-      .response.text()
+    const txt = rsp.response
+      .text()
       .trim()
       .replace(/^```[\s\S]*?\n/, "")
       .replace(/```$/, "")
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
           csv(j.skills),
           j.url,
           j.postedAt,
-          j.remote ?? false,               // <-- now defaults to false, never null
+          j.remote ?? false, // <-- now defaults to false, never null
           j.type === "internship" ? "i" : "j",
           j.salaryLow,
           j.salaryHigh,
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
           csv(j.skills),
           j.url,
           j.postedAt,
-          j.remote ?? false,               // <-- and here too
+          j.remote ?? false, // <-- and here too
           j.type === "internship" ? "i" : "j",
           j.salaryLow,
           j.salaryHigh,

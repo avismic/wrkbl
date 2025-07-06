@@ -9,6 +9,7 @@ import styles from "../post-requests/page.module.css";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+// Raw rows from the API, arrays or strings allowed
 interface Raw {
   id: string;
   title: string;
@@ -16,10 +17,12 @@ interface Raw {
   type: "job" | "internship" | "j" | "i";
   industry?: string;
   industries?: string | string[];
-  benefits?: string;
-  skills?: string;
+  benefits?: string | string[];
+  skills?: string | string[];
   [k: string]: any;
 }
+
+// Our normalized row always has arrays
 interface Row extends Raw {
   industries: string[];
   benefits: string[];
@@ -54,9 +57,10 @@ export default function TrashPage() {
   }, [rows, query]);
   const visible = filtered.slice(0, limit);
 
-  // edit
+  // edit panel state
   const [editing, setEditing] = useState<Row | null>(null);
   const [saving, setSaving] = useState(false);
+
   const saveRow = async (payload: any) => {
     setSaving(true);
     await fetch(`/api/trash/${payload.id}`, {
@@ -83,10 +87,12 @@ export default function TrashPage() {
     setSel(new Set(all ? [] : ids));
   };
 
-  // bulk handlers
+  // bulk actions
   const [bulkProgress, setBulkProgress] = useState(0);
   const [loadingBulk, setLoadingBulk] = useState(false);
-  const [reviewResults, setReviewResults] = useState<Record<string, string> | null>(null);
+  const [reviewResults, setReviewResults] = useState<Record<string, string> | null>(
+    null
+  );
 
   const handlePostSelected = async () => {
     setLoadingBulk(true);
@@ -125,7 +131,7 @@ export default function TrashPage() {
     });
     const { results } = await rsp.json();
     setReviewResults(results);
-    await mutate(); // some may have moved
+    await mutate();
     setSel(new Set());
     setLoadingBulk(false);
   };
@@ -150,9 +156,25 @@ export default function TrashPage() {
         <div className={styles.card}>
           <h2>Edit Request</h2>
           <JobForm
+            // supply exactly the strings/arrays JobForm expects:
             initial={{
-              ...editing,
-              skills: editing.skills, // array is accepted
+              id: editing.id,
+              title: editing.title,
+              company: editing.company,
+              city: editing.city,
+              country: editing.country,
+              officeType: editing.officeType,
+              experienceLevel: editing.experienceLevel,
+              employmentType: editing.employmentType,
+              industries: editing.industries,
+              benefits: editing.benefits,
+              skills: editing.skills.join(", "),
+              visa: editing.visa,
+              url: editing.url,
+              currency: editing.currency,
+              salaryLow: String(editing.salaryLow),
+              salaryHigh: String(editing.salaryHigh),
+              type: editing.type === "internship" ? "internship" : "job",
             }}
             editMode
             loading={saving}
@@ -182,8 +204,7 @@ export default function TrashPage() {
         </thead>
         <tbody>
           {visible.map((r) => {
-            const busy =
-              saving || loadingBulk || (editing !== null && editing.id === r.id);
+            const busy = saving || loadingBulk || editing?.id === r.id;
             return (
               <tr key={r.id}>
                 <td>
@@ -248,13 +269,16 @@ export default function TrashPage() {
       {/* load more */}
       {limit < filtered.length && (
         <div style={{ textAlign: "center", marginTop: "1rem" }}>
-          <button className={styles.loadMore} onClick={() => setLimit((l) => l + 10)}>
+          <button
+            className={styles.loadMore}
+            onClick={() => setLimit((l) => l + 10)}
+          >
             Load More
           </button>
         </div>
       )}
 
-      {/* gemini review panel */}
+      {/* Gemini review panel */}
       {reviewResults && (
         <div className={styles.reviewPanel}>
           <h3>Gemini Review</h3>

@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, ChangeEvent } from "react";
+// @ts-ignore: no shipped types for papaparse
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import styles from "./CsvUploadPanel.module.css";
@@ -39,14 +40,16 @@ export default function CsvUploadPanel() {
       setCsvError("No file selected");
       return;
     }
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: ({ data, errors }) => {
+      complete: (results: Papa.ParseResult<any>) => {
+        const { data, errors }: { data: any[]; errors: Papa.ParseError[] } = results;
         if (errors.length) {
           setCsvError(errors.map((er) => er.message).join("; "));
         } else {
-          const rows: ParsedJob[] = (data as any[]).map((row) => ({
+          const rows: ParsedJob[] = data.map((row) => ({
             id:
               uuidv4().slice(0, 4) +
               "-" +
@@ -59,18 +62,25 @@ export default function CsvUploadPanel() {
             experienceLevel: row.experienceLevel || "",
             employmentType: row.employmentType || "",
             industries:
-              row.industries?.split(",").map((s: string) => s.trim()) ?? [],
+              typeof row.industries === "string"
+                ? row.industries.split(",").map((s: string) => s.trim())
+                : Array.isArray(row.industries)
+                ? row.industries
+                : [],
             visa: String(row.visa).toLowerCase() === "yes",
             benefits:
-              row.benefits?.split(",").map((s: string) => s.trim()) ?? [],
+              typeof row.benefits === "string"
+                ? row.benefits.split(",").map((s: string) => s.trim())
+                : Array.isArray(row.benefits)
+                ? row.benefits
+                : [],
             skills: row.skills || "",
             url: row.url || "",
             currency: row.currency || "",
             salaryLow: row.salaryLow || "",
             salaryHigh: row.salaryHigh || "",
             type:
-              String(row["type"] ?? row["j/i"]).toLowerCase() ===
-                "internship" ||
+              String(row["type"] ?? row["j/i"]).toLowerCase() === "internship" ||
               String(row["j/i"]).toLowerCase() === "i"
                 ? "internship"
                 : "job",
@@ -80,7 +90,9 @@ export default function CsvUploadPanel() {
           setCsvError(null);
         }
       },
-      error: (err) => setCsvError(err.message),
+      error: (err: Papa.ParseError) => {
+        setCsvError(err.message);
+      },
     });
   };
 
@@ -98,15 +110,14 @@ export default function CsvUploadPanel() {
           body: JSON.stringify({
             ...job,
             skills: job.skills.split(",").map((s) => s.trim()),
-            industry: job.industries.join(","), // for legacy
+            industry: job.industries.join(","), // legacy fallback
           }),
         });
         setUploadedCount(i + 1);
       }
-      // clear after all done
       setParsedJobs([]);
-    } catch (err: any) {
-      setCsvError(err.message || "Upload failed");
+    } catch (e: any) {
+      setCsvError(e.message || "Upload failed");
     } finally {
       setUploading(false);
     }
