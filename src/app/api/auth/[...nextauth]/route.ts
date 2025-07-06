@@ -2,7 +2,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-export const authOptions = {
+// make this a local constant, not an export
+const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Admin Credentials",
@@ -29,5 +30,5 @@ export const authOptions = {
 
 const handler = NextAuth(authOptions);
 
-// these exports let Next.js know how to handle GET/POST
+// only export the route methods
 export { handler as GET, handler as POST };
