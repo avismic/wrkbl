@@ -1,9 +1,10 @@
 /* identical styles stolen from AdminPageClient.module.css */
-:global(:root) {
+:global{:root {
   --color-primary: #4baaf3;
   --color-primary-light: #69c1ff;
   --color-danger: #e74c3c;
   --radius: 6px;
+}
 }
 
 /* grid & inputs */

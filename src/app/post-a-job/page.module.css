@@ -1,11 +1,11 @@
-:global(:root) {
+:global{:root {
   --color-bg-dark: #1b1b1b;
   --color-primary: #4baaf3;
   --color-primary-light: #69c1ff;
   --color-danger: #e74c3c;
   --radius: 6px;
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+    Helvetica, Arial, sans-serif;}
 }
 
 /* container */
