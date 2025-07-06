@@ -1,9 +1,9 @@
 // src/app/api/requests/[id]/post/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 export async function POST(
-  _req: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   const pool = await openDb();
