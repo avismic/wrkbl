@@ -1,24 +1,28 @@
 // src/app/api/requests/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  // 1) await the dynamic id
+  const { id } = await context.params;
+  
+  // 2) delete the request
   const pool = await openDb();
   await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
+
   return NextResponse.json({ success: true });
 }
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
-  // 1) read body before params
-  const body = await req.json();
-  const { id } = params;
+  // 1) await the dynamic id and parse the body
+  const { id } = await context.params;
+  const body = await request.json();
 
   // 2) CSV-join your arrays
   const industryCsv = Array.isArray(body.industries)
@@ -56,24 +60,24 @@ export async function POST(
     `
     UPDATE requests
     SET
-      title            = $1,
-      company          = $2,
-      city             = $3,
-      country          = $4,
-      "officeType"     = $5,
-      "experienceLevel"= $6,
-      "employmentType" = $7,
-      industry         = $8,
-      visa             = $9,
-      benefits         = $10,
-      skills           = $11,
-      url              = $12,
-      "postedAt"       = $13,
-      remote           = $14,
-      type             = $15,
-      "salaryLow"      = $16,
-      "salaryHigh"     = $17,
-      currency         = $18
+      title             = $1,
+      company           = $2,
+      city              = $3,
+      country           = $4,
+      "officeType"      = $5,
+      "experienceLevel" = $6,
+      "employmentType"  = $7,
+      industry          = $8,
+      visa              = $9,
+      benefits          = $10,
+      skills            = $11,
+      url               = $12,
+      "postedAt"        = $13,
+      remote            = $14,
+      type              = $15,
+      "salaryLow"       = $16,
+      "salaryHigh"      = $17,
+      currency          = $18
     WHERE id = $19
   `,
     [
