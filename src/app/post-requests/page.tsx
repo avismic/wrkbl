@@ -53,7 +53,8 @@ export default function RequestsPage(){
   const requests = useMemo(()=>data.map(normalise),[data]);
 
   /* search & pagination */
-  const [query,setQuery]=useState(""); const [visibleCount,setVisibleCount]=useState(10);
+  const [query,setQuery]=useState("");
+  const [visibleCount,setVisibleCount]=useState(10);
   const filtered = useMemo(()=>{
     const q=query.trim().toLowerCase();
     return requests.filter(j=>
@@ -72,17 +73,16 @@ export default function RequestsPage(){
 
   const saveEdit = async (payload:any)=>{
     setSavingId(payload.id);
-    /* ---- BUG-FIX -- use `industry` (singular) to match DB column ---- */
     const body = {
       ...payload,
-      industry:  payload.industries.join(","),         // <- fixed
+      industry:  payload.industries.join(","),
       benefits:  payload.benefits.join(","),
       skills:    payload.skills.join(","),
       type:      payload.type==="internship"?"i":"j",
       visa:      payload.visa?1:0,
       remote:    payload.remote?1:0,
     };
-    delete (body as any).industries;                  // keep JSON clean
+    delete (body as any).industries;
 
     await fetch(`/api/requests/${payload.id}`,{
       method:"POST",
@@ -90,10 +90,11 @@ export default function RequestsPage(){
       body:JSON.stringify(body)
     });
     await mutateReq();
-    setSavingId(null); setEditing(null);
+    setSavingId(null);
+    setEditing(null);
   };
 
-  /* selection & bulk actions (unchanged) */
+  /* selection & bulk actions */
   const [selected,setSelected]=useState<Set<string>>(new Set());
   const toggleOne=(id:string)=>setSelected(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
   const toggleAll=()=>{
@@ -106,28 +107,34 @@ export default function RequestsPage(){
   const [bulkProgress,setBulkProgress]=useState(0);
 
   const handlePostSelected = async()=>{
-    setLoadingBulk(true); setBulkProgress(0);
+    setLoadingBulk(true);
+    setBulkProgress(0);
     const ids=[...selected];
     for(let i=0;i<ids.length;i++){
       await fetch(`/api/requests/${ids[i]}/post`,{method:"POST"});
       setBulkProgress(i+1);
     }
     await mutateReq(); await mutateJobs();
-    setSelected(new Set()); setLoadingBulk(false);
+    setSelected(new Set());
+    setLoadingBulk(false);
   };
 
   const handleDeleteSelected = async()=>{
-    setLoadingBulk(true); setBulkProgress(0);
+    setLoadingBulk(true);
+    setBulkProgress(0);
     const ids=[...selected];
     for(let i=0;i<ids.length;i++){
       await fetch(`/api/requests/${ids[i]}`,{method:"DELETE"});
       setBulkProgress(i+1);
     }
-    await mutateReq(); setSelected(new Set()); setLoadingBulk(false);
+    await mutateReq();
+    setSelected(new Set());
+    setLoadingBulk(false);
   };
 
   const handleReviewSelected = async()=>{
-    setLoadingBulk(true); setBulkProgress(0);
+    setLoadingBulk(true);
+    setBulkProgress(0);
     const ids=[...selected];
     try{
       const rsp = await fetch("/api/review-requests",{
@@ -137,14 +144,21 @@ export default function RequestsPage(){
       const {results} = await rsp.json() as {results:Record<string,string>};
       setReviewResults(results);
 
-      const valids = Object.entries(results).filter(([,v])=>v==="valid").map(([id])=>id);
+      const valids = Object.entries(results)
+        .filter(([,v])=>v==="valid")
+        .map(([id])=>id);
       for(let i=0;i<valids.length;i++){
         await fetch(`/api/requests/${valids[i]}/post`,{method:"POST"});
         setBulkProgress(i+1);
       }
-      await mutateReq(); if(valids.length) await mutateJobs();
-    }catch(e){console.error(e);alert("Gemini review failed.");}
-    setSelected(new Set()); setLoadingBulk(false);
+      await mutateReq();
+      if(valids.length) await mutateJobs();
+    }catch(e){
+      console.error(e);
+      alert("Gemini review failed.");
+    }
+    setSelected(new Set());
+    setLoadingBulk(false);
   };
 
   /* Gemini results panel */
@@ -155,17 +169,23 @@ export default function RequestsPage(){
     <div className={styles.container}>
       <h1 className={styles.title}>Pending Job Requests</h1>
 
-      <input className={styles.searchInput}
-             placeholder="Search title, company, location, skills…"
-             value={query}
-             onChange={e=>{setQuery(e.target.value);setVisibleCount(10);}}/>
+      <input
+        className={styles.searchInput}
+        placeholder="Search title, company, location, skills…"
+        value={query}
+        onChange={e=>{setQuery(e.target.value);setVisibleCount(10);}}
+      />
 
       {/* edit panel */}
       {editing && (
         <div className={styles.card}>
           <h2>Edit Request</h2>
           <JobForm
-            initial={editing}
+            initial={{
+              ...editing,
+              // convert skills array → comma-string
+              skills: editing.skills.join(", "),
+            }}
             editMode
             loading={savingId===editing.id}
             onSubmit={saveEdit}
@@ -178,34 +198,68 @@ export default function RequestsPage(){
       <table className={styles.table}>
         <thead>
           <tr>
-            <th><input type="checkbox"
-                       checked={visible.length>0 && visible.every(r=>selected.has(r.id))}
-                       onChange={toggleAll}/></th>
-            <th>ID</th><th>Title</th><th>Company</th>
-            <th>City</th><th>Country</th><th>Type</th><th>Actions</th>
+            <th>
+              <input
+                type="checkbox"
+                checked={visible.length>0 && visible.every(r=>selected.has(r.id))}
+                onChange={toggleAll}
+              />
+            </th>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Company</th>
+            <th>City</th>
+            <th>Country</th>
+            <th>Type</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {visible.map(r=>{
-            const busy=savingId===r.id;
+          {visible.map(r => {
+            const busy = savingId === r.id;
             return (
               <tr key={r.id}>
-                <td><input type="checkbox" checked={selected.has(r.id)} onChange={()=>toggleOne(r.id)}/></td>
-                <td>{r.id}</td><td>{r.title}</td><td>{r.company}</td>
-                <td>{r.city}</td><td>{r.country}</td>
-                <td>{r.type==="internship"?"Internship":"Job"}</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={()=>toggleOne(r.id)}
+                  />
+                </td>
+                <td>{r.id}</td>
+                <td>{r.title}</td>
+                <td>{r.company}</td>
+                <td>{r.city}</td>
+                <td>{r.country}</td>
+                <td>{r.type==="internship" ? "Internship" : "Job"}</td>
                 <td className={styles.actions}>
-                  <button className={`${styles.button} ${styles.edit}`}
-                          onClick={()=>setEditing(r)}
-                          disabled={busy||editing?.id===r.id}>Edit</button>
-                  <button className={`${styles.button} ${styles.primary}`}
-                          onClick={async()=>{await fetch(`/api/requests/${r.id}/post`,{method:"POST"});
-                                             mutateReq();mutateJobs();}}
-                          disabled={busy}>Post</button>
-                  <button className={`${styles.button} ${styles.delete}`}
-                          onClick={async()=>{await fetch(`/api/requests/${r.id}`,{method:"DELETE"});
-                                             mutateReq();}}
-                          disabled={busy}>Delete</button>
+                  <button
+                    className={`${styles.button} ${styles.edit}`}
+                    onClick={()=>setEditing(r)}
+                    disabled={busy||editing?.id===r.id}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className={`${styles.button} ${styles.primary}`}
+                    onClick={async()=>{
+                      await fetch(`/api/requests/${r.id}/post`,{method:"POST"});
+                      mutateReq(); mutateJobs();
+                    }}
+                    disabled={busy}
+                  >
+                    Post
+                  </button>
+                  <button
+                    className={`${styles.button} ${styles.delete}`}
+                    onClick={async()=>{
+                      await fetch(`/api/requests/${r.id}`,{method:"DELETE"});
+                      mutateReq();
+                    }}
+                    disabled={busy}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             );
@@ -227,9 +281,14 @@ export default function RequestsPage(){
       )}
 
       {/* load-more */}
-      {visibleCount<filtered.length && (
+      {visibleCount < filtered.length && (
         <div style={{textAlign:"center",marginTop:"1rem"}}>
-          <button className={styles.loadMore} onClick={()=>setVisibleCount(c=>c+10)}>Load More</button>
+          <button
+            className={styles.loadMore}
+            onClick={()=>setVisibleCount(c=>c+10)}
+          >
+            Load More
+          </button>
         </div>
       )}
 
@@ -238,7 +297,12 @@ export default function RequestsPage(){
         <div className={styles.reviewPanel}>
           <h3>Gemini Review</h3>
           <pre>{JSON.stringify(reviewResults,null,2)}</pre>
-          <button className={`${styles.button} ${styles.delete}`} onClick={()=>setReviewResults(null)}>Close</button>
+          <button
+            className={`${styles.button} ${styles.delete}`}
+            onClick={()=>setReviewResults(null)}
+          >
+            Close
+          </button>
         </div>
       )}
     </div>
