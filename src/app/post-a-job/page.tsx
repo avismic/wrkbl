@@ -3,7 +3,7 @@
 
 import React, { useState, ChangeEvent, FormEvent } from "react";
 // @ts-ignore: no type declarations for papaparse
-import Papa from "papaparse";
+import Papa, { ParseError, ParseResult } from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import styles from "./page.module.css";
 import CsvUploadPanel from "@/components/CsvUploadPanel";
@@ -83,9 +83,10 @@ export default function PostAJobPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: ({ data, errors }) => {
+      complete: (results: ParseResult<any>) => {
+        const { data, errors } = results;
         if (errors.length) {
-          setCsvError(errors.map((er) => er.message).join("; "));
+          setCsvError(errors.map((er: ParseError) => er.message).join("; "));
         } else {
           const rows: CsvJob[] = (data as any[]).map((row) => ({
             id:
@@ -125,7 +126,7 @@ export default function PostAJobPage() {
           setCsvError(null);
         }
       },
-      error: (err) => setCsvError(err.message),
+      error: (err: ParseError) => setCsvError(err.message),
     });
   };
 
@@ -145,8 +146,8 @@ export default function PostAJobPage() {
         });
       }
       setParsedJobs([]);
-    } catch (err: any) {
-      setCsvError(err.message || "Failed to upload");
+    } catch (err: unknown) {
+      setCsvError((err as Error).message || "Failed to upload");
     } finally {
       setUploadingCsv(false);
     }
@@ -156,10 +157,18 @@ export default function PostAJobPage() {
   const onChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    // force checkbox checked from correct target
+    const checked =
+      type === "checkbox"
+        ? (e.target as HTMLInputElement).checked
+        : undefined;
     setForm((f) => ({
       ...f,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
     }));
   };
 
@@ -197,8 +206,8 @@ export default function PostAJobPage() {
         }),
       });
       setStatus("sent");
-    } catch (err: any) {
-      setError(err.message || "Failed to submit");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to submit");
       setStatus("idle");
     }
   };
@@ -417,7 +426,9 @@ export default function PostAJobPage() {
         <button
           type="submit"
           disabled={status === "sending"}
-          className={`${styles.button} ${styles.primary} ${styles.fullWidth}`}
+          className={`${styles.button} ${styles.primary} ${
+            styles.fullWidth
+          }`}
         >
           {status === "sending" ? "Sending…" : "Submit Request"}
         </button>
