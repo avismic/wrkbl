@@ -4,32 +4,32 @@ import { openDb } from "@/lib/db";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }
 ) {
-  const id = params.id;
+  const { id } = params;
   const pool = await openDb();
-  await db.run(`DELETE FROM requests WHERE id = ?`, id);
+  await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
   return NextResponse.json({ success: true });
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }
 ) {
   // 1) read body before params
   const body = await req.json();
-  const id = params.id;
+  const { id } = params;
 
   // 2) CSV-join your arrays
   const industryCsv = Array.isArray(body.industries)
     ? body.industries.join(",")
-    : body.industries || "";
+    : body.industries ?? "";
   const benefitsCsv = Array.isArray(body.benefits)
     ? body.benefits.join(",")
-    : body.benefits || "";
+    : body.benefits ?? "";
   const skillsCsv = Array.isArray(body.skills)
     ? body.skills.join(",")
-    : body.skills || "";
+    : body.skills ?? "";
 
   // 3) pull everything else out
   const {
@@ -52,49 +52,51 @@ export async function POST(
 
   // 4) update the row
   const pool = await openDb();
-  await db.run(
+  await pool.query(
     `
     UPDATE requests
     SET
-      title           = ?,
-      company         = ?,
-      city            = ?,
-      country         = ?,
-      officeType      = ?,
-      experienceLevel = ?,
-      employmentType  = ?,
-      industry        = ?,
-      visa            = ?,
-      benefits        = ?,
-      skills          = ?,
-      url             = ?,
-      postedAt        = ?,
-      remote          = ?,
-      type            = ?,
-      salaryLow       = ?,
-      salaryHigh      = ?,
-      currency        = ?
-    WHERE id = ?
+      title            = $1,
+      company          = $2,
+      city             = $3,
+      country          = $4,
+      "officeType"       = $5,
+      "experienceLevel"  = $6,
+      "employmentType"   = $7,
+      industry         = $8,
+      visa             = $9,
+      benefits         = $10,
+      skills           = $11,
+      url              = $12,
+      "postedAt"         = $13,
+      remote           = $14,
+      type             = $15,
+      "salaryLow"        = $16,
+      "salaryHigh"       = $17,
+      currency         = $18
+    WHERE id = $19
   `,
-    title,
-    company,
-    city,
-    country,
-    officeType,
-    experienceLevel,
-    employmentType,
-    industryCsv,
-    visa ? 1 : 0,
-    benefitsCsv,
-    skillsCsv,
-    url,
-    postedAt,
-    remote ? 1 : 0,
-    type === "internship" ? "i" : "j",
-    salaryLow,
-    salaryHigh,
-    currency,
-    id
+    [
+      title,
+      company,
+      city,
+      country,
+      officeType,
+      experienceLevel,
+      employmentType,
+      industryCsv,
+      visa,
+      benefitsCsv,
+      skillsCsv,
+      url,
+      postedAt,
+      remote,
+      type === "internship" ? "i" : "j",
+      salaryLow,
+      salaryHigh,
+      currency,
+      id,
+    ]
   );
 
   return NextResponse.json({ updated: true });

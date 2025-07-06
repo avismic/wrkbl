@@ -1,42 +1,75 @@
 // src/app/api/trash/[id]/post/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 export async function POST(
-  _req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }
 ) {
-  const pool  = await openDb();
-  const row = await db.get(`SELECT * FROM trash WHERE id = ?`, params.id);
+  const pool = await openDb();
 
+  // 1) fetch the trashed row
+  const { rows } = await pool.query(
+    `SELECT
+       id, title, company,
+       city, country,
+       "officeType", "experienceLevel", "employmentType", industry,
+       visa, benefits,
+       skills, url, "postedAt",
+       remote, type, "salaryLow", "salaryHigh", currency
+     FROM trash
+     WHERE id = $1
+    `,
+    [params.id]
+  );
+  const row = rows[0];
   if (!row) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  /* 1 · insert into jobs */
-  await db.run(
-    `
-      INSERT INTO jobs (
-        id, title, company,
-        city, country,
-        officeType, experienceLevel, employmentType, industry,
-        visa, benefits,
-        skills, url, postedAt,
-        remote, type, salaryLow, salaryHigh, currency
-      ) VALUES (
-        ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-      )
+  // 2) insert into jobs
+  await pool.query(
+    `INSERT INTO jobs (
+       id, title, company,
+       city, country,
+       "officeType", "experienceLevel", "employmentType", industry,
+       visa, benefits,
+       skills, url, "postedAt",
+       remote, type, "salaryLow", "salaryHigh", currency
+     ) VALUES (
+       $1, $2, $3,
+       $4, $5,
+       $6, $7, $8, $9,
+       $10, $11,
+       $12, $13, $14,
+       $15, $16, $17, $18, $19
+     )
     `,
-    row.id, row.title, row.company,
-    row.city, row.country,
-    row.officeType, row.experienceLevel, row.employmentType, row.industry,
-    row.visa, row.benefits,
-    row.skills, row.url, row.postedAt,
-    row.remote, row.type, row.salaryLow, row.salaryHigh, row.currency
+    [
+      row.id,
+      row.title,
+      row.company,
+      row.city,
+      row.country,
+      row.officeType,
+      row.experienceLevel,
+      row.employmentType,
+      row.industry,
+      row.visa,
+      row.benefits,
+      row.skills,
+      row.url,
+      row.postedAt,
+      row.remote,
+      row.type,
+      row.salaryLow,
+      row.salaryHigh,
+      row.currency,
+    ]
   );
 
-  /* 2 · remove from trash */
-  await db.run(`DELETE FROM trash WHERE id = ?`, params.id);
+  // 3) remove from trash
+  await pool.query(`DELETE FROM trash WHERE id = $1`, [params.id]);
 
   return NextResponse.json({ posted: true });
 }

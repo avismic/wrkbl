@@ -1,54 +1,49 @@
 // src/app/api/requests/[id]/post/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 export async function POST(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }
 ) {
   const pool = await openDb();
 
-  // 1) fetch the pending request, including all new fields
-  const row: any = await db.get(
-    `
+  // 1) fetch the pending request
+  const { rows } = await pool.query(`
     SELECT
       id, title, company,
       city, country,
-      officeType, experienceLevel, employmentType, industry,
+      "officeType", "experienceLevel", "employmentType", industry,
       visa, benefits,
-      skills, url, postedAt,
-      remote, type, salaryLow, salaryHigh, currency
+      skills, url, "postedAt",
+      remote, type, "salaryLow", "salaryHigh", currency
     FROM requests
-    WHERE id = ?
-  `,
-    params.id
-  );
+    WHERE id = $1
+  `, [params.id]);
 
+  const row = rows[0];
   if (!row) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
   // 2) insert into jobs with the same columns
-  const insertSql = `
+  await pool.query(`
     INSERT INTO jobs (
       id, title, company,
       city, country,
-      officeType, experienceLevel, employmentType, industry,
+      "officeType", "experienceLevel", "employmentType", industry,
       visa, benefits,
-      skills, url, postedAt,
-      remote, type, salaryLow, salaryHigh, currency
+      skills, url, "postedAt",
+      remote, type, "salaryLow", "salaryHigh", currency
     ) VALUES (
-      ?, ?, ?,
-      ?, ?,
-      ?, ?, ?, ?,
-      ?, ?,
-      ?, ?, ?,
-      ?, ?, ?, ?, ?
+      $1, $2, $3,
+      $4, $5,
+      $6, $7, $8, $9,
+      $10, $11,
+      $12, $13, $14,
+      $15, $16, $17, $18, $19
     )
-  `.trim();
-
-  await db.run(
-    insertSql,
+  `, [
     row.id,
     row.title,
     row.company,
@@ -67,11 +62,11 @@ export async function POST(
     row.type,
     row.salaryLow,
     row.salaryHigh,
-    row.currency
-  );
+    row.currency,
+  ]);
 
-  // 3) delete the request
-  await db.run(`DELETE FROM requests WHERE id = ?`, params.id);
+  // 3) delete the original request
+  await pool.query(`DELETE FROM requests WHERE id = $1`, [params.id]);
 
   return NextResponse.json({ success: true });
 }
