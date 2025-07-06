@@ -2,11 +2,11 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent } from "react";
+// @ts-ignore: no type declarations for papaparse
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import styles from "./page.module.css";
 import CsvUploadPanel from "@/components/CsvUploadPanel";
-
 
 /* ─── option lists (same as admin) ─── */
 type OfficeType = "Remote" | "Hybrid" | "In-Office" | "Remote-Anywhere";
@@ -88,7 +88,10 @@ export default function PostAJobPage() {
           setCsvError(errors.map((er) => er.message).join("; "));
         } else {
           const rows: CsvJob[] = (data as any[]).map((row) => ({
-            id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
+            id:
+              uuidv4().slice(0, 4) +
+              "-" +
+              Math.floor(100 + Math.random() * 900),
             title: row.title || "",
             company: row.company || "",
             city: row.city || "",
@@ -97,16 +100,22 @@ export default function PostAJobPage() {
             experienceLevel: row.experienceLevel || "",
             employmentType: row.employmentType || "",
             industries:
-              row.industries?.split(",").map((s: string) => s.trim()) ?? [],
+              row.industries
+                ?.split(",")
+                .map((s: string) => s.trim()) ?? [],
             visa: String(row.visa).toLowerCase() === "yes",
-            benefits: row.benefits?.split(",").map((s: string) => s.trim()) ?? [],
+            benefits:
+              row.benefits
+                ?.split(",")
+                .map((s: string) => s.trim()) ?? [],
             skills: row.skills || "",
             url: row.url || "",
             currency: row.currency || "",
             salaryLow: row.salaryLow || "",
             salaryHigh: row.salaryHigh || "",
             type:
-              String(row["type"] ?? row["j/i"])?.toLowerCase() === "internship" ||
+              String(row["type"] ?? row["j/i"])
+                .toLowerCase() === "internship" ||
               String(row["j/i"]).toLowerCase() === "i"
                 ? "internship"
                 : "job",
@@ -154,7 +163,11 @@ export default function PostAJobPage() {
     }));
   };
 
-  const toggleArr = (key: "industries" | "benefits", val: string, max = 99) =>
+  const toggleArr = (
+    key: "industries" | "benefits",
+    val: string,
+    max = 99
+  ) =>
     setForm((f) => {
       const next = new Set(f[key]);
       next.has(val) ? next.delete(val) : next.add(val);
@@ -172,7 +185,10 @@ export default function PostAJobPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
+          id:
+            uuidv4().slice(0, 4) +
+            "-" +
+            Math.floor(100 + Math.random() * 900),
           ...form,
           skills: form.skills.split(",").map((s) => s.trim()),
           industries: form.industries,
@@ -191,7 +207,9 @@ export default function PostAJobPage() {
     return (
       <div className={styles.thanks}>
         <h1>Thank you!</h1>
-        <p>Your job request has been sent. The admin will review it shortly.</p>
+        <p>
+          Your job request has been sent. The admin will review it shortly.
+        </p>
       </div>
     );
   }
@@ -202,11 +220,9 @@ export default function PostAJobPage() {
       <h1 className={styles.title}>Post a Job Request</h1>
       <CsvUploadPanel />
 
-
-      {/*  manual form  */}
+      {/* manual form */}
       {error && <p className={styles.error}>{error}</p>}
       <form className={styles.formGrid} onSubmit={handleSubmit}>
-        {/* identical form fields as before … */}
         {/* Row 1 */}
         <input
           name="title"
@@ -222,6 +238,7 @@ export default function PostAJobPage() {
           onChange={onChange}
           required
         />
+
         {/* Row 2 */}
         <input
           name="city"
@@ -237,8 +254,14 @@ export default function PostAJobPage() {
           onChange={onChange}
           required
         />
+
         {/* Row 3 */}
-        <select name="officeType" value={form.officeType} onChange={onChange} required>
+        <select
+          name="officeType"
+          value={form.officeType}
+          onChange={onChange}
+          required
+        >
           <option value="" disabled>
             Location Type (Select one)
           </option>
@@ -264,6 +287,7 @@ export default function PostAJobPage() {
           <option>Managerial</option>
           <option>Executive</option>
         </select>
+
         {/* Row 4 */}
         <select
           name="employmentType"
@@ -283,18 +307,21 @@ export default function PostAJobPage() {
         <div className={styles.fullWidth}>
           <p className={styles.label}>Industry (up to 3):</p>
           <div className={styles.checkboxGroup}>
-            {["Tech", "Marketing", "Finance", "Healthcare", "Education"].map((opt) => (
-              <label key={opt}>
-                <input
-                  type="checkbox"
-                  checked={form.industries.includes(opt)}
-                  onChange={() => toggleArr("industries", opt, 3)}
-                />{" "}
-                {opt}
-              </label>
-            ))}
+            {["Tech", "Marketing", "Finance", "Healthcare", "Education"].map(
+              (opt) => (
+                <label key={opt}>
+                  <input
+                    type="checkbox"
+                    checked={form.industries.includes(opt)}
+                    onChange={() => toggleArr("industries", opt, 3)}
+                  />{" "}
+                  {opt}
+                </label>
+              )
+            )}
           </div>
         </div>
+
         {/* Visa */}
         <label className={styles.fullWidth}>
           <input
@@ -305,6 +332,7 @@ export default function PostAJobPage() {
           />{" "}
           Visa Sponsorship Available
         </label>
+
         {/* Benefits */}
         <div className={styles.fullWidth}>
           <p className={styles.label}>Benefits:</p>
@@ -321,6 +349,7 @@ export default function PostAJobPage() {
             ))}
           </div>
         </div>
+
         {/* Row 5 */}
         <input
           className={styles.fullWidth}
@@ -336,6 +365,7 @@ export default function PostAJobPage() {
           value={form.url}
           onChange={onChange}
         />
+
         {/* Row 6 */}
         <select
           name="currency"
@@ -367,6 +397,7 @@ export default function PostAJobPage() {
             onChange={onChange}
           />
         </div>
+
         {/* Row 7 */}
         <select
           name="type"
@@ -381,6 +412,7 @@ export default function PostAJobPage() {
           <option value="job">Job</option>
           <option value="internship">Internship</option>
         </select>
+
         {/* Submit */}
         <button
           type="submit"
