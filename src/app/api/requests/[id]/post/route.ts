@@ -4,10 +4,10 @@ import { openDb } from "@/lib/db";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // 1) pull out the dynamic id
-  const { id } = params;
+  // 1) pull out and await the dynamic id
+  const { id } = await params;
 
   const pool = await openDb();
 
