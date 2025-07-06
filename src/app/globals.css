@@ -4,19 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Set the global background to grey */
+/* Set global CSS variables */
 :root {
+  /* Core layout colors & sizing */
   --background: #808080;
   --foreground: #171717;
-  --header-height: 4rem;    /* ← new variable for header height */
+  --header-height: 4rem;
+
+  /* Theme variables moved from module CSS */
+  --color-bg-dark: #1b1b1b;
+  --color-card-bg: #ffffff;
+  --color-primary: #4baaf3;
+  --color-primary-light: #69c1ff;
+  --color-danger: #e74c3c;
+  --color-border: #2a2a2a;
+  --radius: 6px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Keep the same grey in dark mode (or pick a darker grey if you prefer) */
+    /* Dark mode overrides */
     --background: #202020;
     --foreground: #ededed;
-    --header-height: 4rem;
+    /* Other variables remain as above */
   }
 }
 
@@ -46,5 +57,5 @@ body {
 
 .pageContent {
   flex: 1;
-  padding-top: var(--header-height);  /* ← pushes all of <main> below the fixed header */
+  padding-top: var(--header-height);  /* pushes <main> below the fixed header */
 }
