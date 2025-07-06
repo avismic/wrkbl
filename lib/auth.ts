@@ -1,10 +1,8 @@
-// src/app/api/auth/[...nextauth]/route.ts
-import NextAuth from "next-auth";
+// src/lib/auth.ts
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import authHandler from "@/lib/auth";
 
-// make this a local constant, not an export
-const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Admin Credentials",
@@ -24,12 +22,8 @@ const authOptions = {
     }),
   ],
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/admin/login",
-  },
+  pages: { signIn: "/admin/login" },
 };
 
-const handler = NextAuth(authOptions);
-
-// only export the route methods
-export { handler as GET, handler as POST };
+// route handler
+export default NextAuth(authOptions);
