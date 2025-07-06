@@ -1,5 +1,5 @@
 /* ====== MayoCity admin console ====== */
-:root {
+:global(:root) {
   --color-bg-dark: #1b1b1b;
   --color-card-bg: #ffffff;
   --color-primary: #4baaf3;

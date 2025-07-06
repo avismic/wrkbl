@@ -1,5 +1,5 @@
 /* identical styles stolen from AdminPageClient.module.css */
-:root {
+:global(:root) {
   --color-primary: #4baaf3;
   --color-primary-light: #69c1ff;
   --color-danger: #e74c3c;
