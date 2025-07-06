@@ -3,6 +3,7 @@
 
 import { useState, ChangeEvent } from "react";
 import useSWR from "swr";
+// @ts-ignore: no type declarations for papaparse
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import { signOut } from "next-auth/react";
@@ -110,11 +111,14 @@ export default function AdminPageClient() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: ({ data, errors }) => {
+      complete: (results: { data: any[]; errors: { message: string }[] }) => {
+        const { data, errors } = results;
         if (errors.length) {
-          setCsvError(errors.map((er) => er.message).join("; "));
+          setCsvError(
+            errors.map((er: { message: string }) => er.message).join("; ")
+          );
         } else {
-          const list: Job[] = (data as any[]).map((row) => ({
+          const list: Job[] = data.map((row: any) => ({
             id:
               uuidv4().slice(0, 4) +
               "-" +
@@ -136,7 +140,9 @@ export default function AdminPageClient() {
             postedAt: Date.now(),
             remote: String(row.officeType).toLowerCase().includes("remote"),
             type:
-              String(row["j/i"]).toLowerCase() === "i" ? "internship" : "job",
+              String(row["j/i"]).toLowerCase() === "i"
+                ? "internship"
+                : "job",
             currency: row.currency,
             salaryLow: parseInt(row.salaryLow, 10) || 0,
             salaryHigh: parseInt(row.salaryHigh, 10) || 0,
@@ -145,7 +151,7 @@ export default function AdminPageClient() {
           setCsvError(null);
         }
       },
-      error: (err) => setCsvError(err.message),
+      error: (err: { message: string }) => setCsvError(err.message),
     });
   };
 
@@ -219,8 +225,11 @@ export default function AdminPageClient() {
     setForm(emptyForm);
   };
 
-  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
+  const onChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setForm((f) => ({
       ...f,
       [name]: type === "checkbox" ? checked : value,
@@ -384,7 +393,6 @@ export default function AdminPageClient() {
       {/* form */}
       <section className={`${styles.section} ${styles.card}`}>
         <h2>{editingId ? "Edit Job" : "Add Job Manually"}</h2>
-
         <div className={styles.formGrid}>
           {/* Row 1 */}
           <input
