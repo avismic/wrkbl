@@ -4,7 +4,7 @@ import { openDb } from "@/lib/db";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }
+  { params }: { params: { id: string } }
 ) {
   const { id } = params;
   const pool = await openDb();
@@ -14,7 +14,7 @@ export async function DELETE(
 
 export async function POST(
   req: NextRequest,
-  { params }
+  { params }: { params: { id: string } }
 ) {
   // 1) read body before params
   const body = await req.json();
@@ -60,19 +60,19 @@ export async function POST(
       company          = $2,
       city             = $3,
       country          = $4,
-      "officeType"       = $5,
-      "experienceLevel"  = $6,
-      "employmentType"   = $7,
+      "officeType"     = $5,
+      "experienceLevel"= $6,
+      "employmentType" = $7,
       industry         = $8,
       visa             = $9,
       benefits         = $10,
       skills           = $11,
       url              = $12,
-      "postedAt"         = $13,
+      "postedAt"       = $13,
       remote           = $14,
       type             = $15,
-      "salaryLow"        = $16,
-      "salaryHigh"       = $17,
+      "salaryLow"      = $16,
+      "salaryHigh"     = $17,
       currency         = $18
     WHERE id = $19
   `,

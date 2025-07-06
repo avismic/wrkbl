@@ -11,11 +11,15 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(creds) {
+        // Guard against undefined
+        if (!creds) return null;
+
+        const { username, password } = creds;
         if (
-          creds?.username === process.env.ADMIN_USER &&
-          creds.password === process.env.ADMIN_PASS
+          username === process.env.ADMIN_USER &&
+          password === process.env.ADMIN_PASS
         ) {
-          return { id: creds.username };
+          return { id: username };
         }
         return null;
       },

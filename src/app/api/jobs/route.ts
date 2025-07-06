@@ -2,9 +2,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
+// Define the shape of a row returned from the database
+interface JobRow {
+  id: string;
+  title: string;
+  company: string;
+  city: string;
+  country: string;
+  officeType: string;
+  experienceLevel: string;
+  employmentType: string;
+  industry: string | null;
+  visa: number;
+  benefits: string;
+  skills: string;
+  url: string;
+  postedAt: number;
+  remote: number;
+  type: "j" | "i";
+  salaryLow: number;
+  salaryHigh: number;
+  currency: string;
+}
+
 export async function GET() {
   const pool = await openDb();
-  const { rows } = await pool.query(`
+  const { rows } = await pool.query<JobRow>(`
     SELECT
       id,
       title,
@@ -29,42 +52,40 @@ export async function GET() {
     ORDER BY "postedAt" DESC
   `);
 
-  return NextResponse.json(
-    rows.map((r) => ({
-      id: r.id,
-      title: r.title,
-      company: r.company,
-      // legacy `location` for backwards‐compatibility
-      location: `${r.city} – ${r.country}`,
-      city: r.city,
-      country: r.country,
-      officeType: r.officeType,
-      experienceLevel: r.experienceLevel,
-      employmentType: r.employmentType,
+  const payload = rows.map((r: JobRow) => ({
+    id: r.id,
+    title: r.title,
+    company: r.company,
+    // legacy `location` for backwards‐compatibility
+    location: `${r.city} – ${r.country}`,
+    city: r.city,
+    country: r.country,
+    officeType: r.officeType,
+    experienceLevel: r.experienceLevel,
+    employmentType: r.employmentType,
 
-      // === NEW: return as an array ===
-      industries: r.industry
-        ? (r.industry as string)
-            .split(",")
-            .map((s) => s.trim())
-        : [],
+    // === NEW: return as an array ===
+    industries: r.industry
+      ? r.industry.split(",").map((s: string) => s.trim())
+      : [],
 
-      visa: Boolean(r.visa),
-      benefits: r.benefits.split(",").map((b: string) => b.trim()),
-      skills: r.skills.split(",").map((s: string) => s.trim()),
-      url: r.url,
-      postedAt: r.postedAt,
-      remote: Boolean(r.remote),
-      type: r.type === "i" ? "internship" : "job",
-      salaryLow: r.salaryLow,
-      salaryHigh: r.salaryHigh,
-      currency: r.currency,
-    }))
-  );
+    visa: Boolean(r.visa),
+    benefits: r.benefits.split(",").map((b: string) => b.trim()),
+    skills: r.skills.split(",").map((s: string) => s.trim()),
+    url: r.url,
+    postedAt: r.postedAt,
+    remote: Boolean(r.remote),
+    type: r.type === "i" ? "internship" : "job",
+    salaryLow: r.salaryLow,
+    salaryHigh: r.salaryHigh,
+    currency: r.currency,
+  }));
+
+  return NextResponse.json(payload);
 }
 
 export async function POST(req: NextRequest) {
-  const jobs = (await req.json()) as Array<{
+  const jobsToInsert = (await req.json()) as Array<{
     id: string;
     title: string;
     company: string;
@@ -76,7 +97,7 @@ export async function POST(req: NextRequest) {
     industry?: string;
     industries?: string[] | string;
     visa: boolean;
-    benefits: string; // comma‐joined
+    benefits: string;
     skills: string[];
     url: string;
     postedAt: number;
@@ -125,7 +146,7 @@ export async function POST(req: NextRequest) {
       currency         = EXCLUDED.currency
   `;
 
-  for (const job of jobs) {
+  for (const job of jobsToInsert) {
     const industryValue = Array.isArray(job.industries)
       ? job.industries.join(",")
       : typeof job.industries === "string"
@@ -152,9 +173,10 @@ export async function POST(req: NextRequest) {
       job.salaryLow,
       job.salaryHigh,
       job.currency,
-    ];
+    ] as const;
+
     await pool.query(sql, values);
   }
 
-  return NextResponse.json({ success: true, count: jobs.length });
+  return NextResponse.json({ success: true, count: jobsToInsert.length });
 }

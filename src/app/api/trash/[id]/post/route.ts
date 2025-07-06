@@ -4,7 +4,7 @@ import { openDb } from "@/lib/db";
 
 export async function POST(
   req: NextRequest,
-  { params }
+  { params }: { params: { id: string } }
 ) {
   const pool = await openDb();
 

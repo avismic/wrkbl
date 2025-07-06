@@ -25,10 +25,10 @@ const COLS: Record<string, string> = {
 
 export async function POST(
   req: NextRequest,
-  { params }
+  { params }: { params: { id: string } }
 ) {
-  // 1. Await the dynamic param
-  const { id } = await params;
+  // 1. Grab the dynamic param
+  const { id } = params;
 
   // 2. Parse the incoming body
   const raw = await req.json();
@@ -64,7 +64,7 @@ export async function POST(
     .map((k, i) => `${COLS[k]} = $${i + 1}`)
     .join(", ");
   const values = keys.map((k) => incoming[k]);
-  values.push(id); // last placeholder for WHERE id
+  values.push(id); // last placeholder for the WHERE
 
   // 6. Execute UPDATE
   const pool = await openDb();

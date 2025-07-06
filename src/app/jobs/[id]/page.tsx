@@ -3,8 +3,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { jobs } from "../../../data/jobs";
 
-export default function JobPage({ params }) {
-  // now `params.id` is inferred correctly
+export default function JobPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const job = jobs.find((j) => j.id === params.id);
   if (!job) notFound();
 

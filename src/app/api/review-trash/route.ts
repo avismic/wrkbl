@@ -18,13 +18,13 @@ const cols = `
 
 export async function POST(req: NextRequest) {
   const { ids } = await req.json();
-  if (!Array.isArray(ids) || !ids.length) {
+  if (!Array.isArray(ids) || ids.length === 0) {
     return NextResponse.json({ error: "No IDs supplied" }, { status: 400 });
   }
 
-  const pool           = await openDb();
+  const pool = await openDb();
   const placeholders = ids.map(() => "?").join(",");
-  const {rows}: any[]  = await pool.all(
+  const rows: any[] = await pool.all(
     `SELECT
         id, title, company,
         city, country, skills, type, url,
@@ -34,21 +34,21 @@ export async function POST(req: NextRequest) {
     ...ids
   );
 
-  /* build prompt – identical rules to /review-requests (omitted for brevity) */
+  /* build prompt – identical rules to /review-requests */
   const prompt = buildGeminiPrompt(
-      rows.map((j) => ({
-        id: j.id,
-        title: j.title,
-        company: j.company,
-        url: j.url,
-        salaryLow: j.salaryLow,
-        salaryHigh: j.salaryHigh,
-      })),
-      "requests"
-    );
+    rows.map((j: any) => ({
+      id: j.id,
+      title: j.title,
+      company: j.company,
+      url: j.url,
+      salaryLow: j.salaryLow,
+      salaryHigh: j.salaryHigh,
+    })),
+    "requests"
+  );
 
-  const rsp     = await model.generateContent(prompt);
-  const rawTxt  = rsp.response.text().trim();
+  const rsp    = await model.generateContent(prompt);
+  const rawTxt = rsp.response.text().trim();
 
   /* tolerant parse */
   const tryParse = (raw: string) => {
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
     }
     return null;
   };
+
   const parsed = tryParse(rawTxt);
   if (!parsed || typeof parsed !== "object") {
     return NextResponse.json(
@@ -76,12 +77,15 @@ export async function POST(req: NextRequest) {
   /* move each “valid” row straight into jobs */
   if (validIds.length) {
     const ph = validIds.map(() => "?").join(",");
-    await db.run(
+    await pool.run(
       `INSERT OR IGNORE INTO jobs (${cols})
        SELECT ${cols} FROM trash WHERE id IN (${ph})`,
       ...validIds
     );
-    await db.run(`DELETE FROM trash WHERE id IN (${ph})`, ...validIds);
+    await pool.run(
+      `DELETE FROM trash WHERE id IN (${ph})`,
+      ...validIds
+    );
   }
 
   return NextResponse.json({ results, posted: validIds });
