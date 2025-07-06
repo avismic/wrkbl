@@ -4,14 +4,14 @@ import { openDb } from "@/lib/db";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  // await the dynamic param
-  const { id } = await params;
+  // 1) pull out the dynamic id
+  const { id } = await context.params;
 
   const pool = await openDb();
 
-  // 1) fetch the pending request
+  // 2) fetch the pending request
   const { rows } = await pool.query<{
     id: string;
     title: string;
@@ -52,7 +52,7 @@ export async function POST(
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  // 2) insert into jobs with the same columns
+  // 3) insert into jobs
   await pool.query(
     `
     INSERT INTO jobs (
@@ -70,7 +70,7 @@ export async function POST(
       $12, $13, $14,
       $15, $16, $17, $18, $19
     )
-  `,
+    `,
     [
       row.id,
       row.title,
@@ -94,7 +94,7 @@ export async function POST(
     ]
   );
 
-  // 3) delete the original request
+  // 4) delete the original request
   await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
 
   return NextResponse.json({ success: true });
