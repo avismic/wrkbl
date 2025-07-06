@@ -1,5 +1,5 @@
 // src/app/api/trash/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 /* form-key → column */
@@ -24,16 +24,16 @@ const COLS: Record<string, string> = {
 };
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // 1. Grab the dynamic param
-  const { id } = params;
+  // 1. await the dynamic id
+  const { id } = await params;
 
-  // 2. Parse the incoming body
-  const raw = await req.json();
+  // 2. parse the incoming body
+  const raw = await request.json();
 
-  // 3. Normalize CSV fields and booleans
+  // 3. normalize CSV fields and booleans
   const incoming: Record<string, any> = {
     ...raw,
     industries: Array.isArray(raw.industries)
@@ -50,7 +50,7 @@ export async function POST(
     type: raw.type === "internship" ? "i" : "j",
   };
 
-  // 4. Whitelist only keys present
+  // 4. whitelist only keys present
   const keys = Object.keys(COLS).filter((k) => k in incoming);
   if (keys.length === 0) {
     return NextResponse.json(
@@ -59,21 +59,21 @@ export async function POST(
     );
   }
 
-  // 5. Build SET clause with numbered placeholders
+  // 5. build SET clause & values
   const setClause = keys
     .map((k, i) => `${COLS[k]} = $${i + 1}`)
     .join(", ");
   const values = keys.map((k) => incoming[k]);
-  values.push(id); // last placeholder for the WHERE
+  values.push(id);
 
-  // 6. Execute UPDATE
+  // 6. execute UPDATE
   const pool = await openDb();
   const res = await pool.query(
     `UPDATE trash SET ${setClause} WHERE id = $${values.length}`,
     values
   );
 
-  // 7. Fetch the updated row
+  // 7. fetch the updated row
   const select = await pool.query(`SELECT * FROM trash WHERE id = $1`, [id]);
   const row = select.rows[0] ?? null;
 
