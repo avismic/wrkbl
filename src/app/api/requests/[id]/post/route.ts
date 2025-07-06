@@ -1,17 +1,17 @@
-// src/app/api/requests/[id]/post/route.ts
+// src/app/api/trash/[id]/post/route.ts
 import { NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
 export async function POST(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // 1) pull out the dynamic id
-  const { id } = await context.params;
+  // 1) pull out and await the dynamic id
+  const { id } = await params;
 
   const pool = await openDb();
 
-  // 2) fetch the pending request
+  // 2) fetch the trashed row
   const { rows } = await pool.query<{
     id: string;
     title: string;
@@ -41,7 +41,7 @@ export async function POST(
       visa, benefits,
       skills, url, "postedAt",
       remote, type, "salaryLow", "salaryHigh", currency
-    FROM requests
+    FROM trash
     WHERE id = $1
     `,
     [id]
@@ -94,8 +94,8 @@ export async function POST(
     ]
   );
 
-  // 4) delete the original request
-  await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
+  // 4) delete it from trash
+  await pool.query(`DELETE FROM trash WHERE id = $1`, [id]);
 
   return NextResponse.json({ success: true });
 }
