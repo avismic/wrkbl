@@ -4,8 +4,11 @@ import { openDb } from "@/lib/db";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  // await the dynamic param
+  const { id } = await params;
+
   const pool = await openDb();
 
   // 1) fetch the pending request
@@ -40,8 +43,8 @@ export async function POST(
       remote, type, "salaryLow", "salaryHigh", currency
     FROM requests
     WHERE id = $1
-  `,
-    [params.id]
+    `,
+    [id]
   );
 
   const row = rows[0];
@@ -92,7 +95,7 @@ export async function POST(
   );
 
   // 3) delete the original request
-  await pool.query(`DELETE FROM requests WHERE id = $1`, [params.id]);
+  await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
 
   return NextResponse.json({ success: true });
 }
