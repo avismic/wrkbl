@@ -2,11 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
-type Params = { params: { id: string } };
-
 export async function POST(
   _req: NextRequest,
-  { params }: Params
+  { params }: { params: { id: string } }
 ) {
   const pool = await openDb();
 
