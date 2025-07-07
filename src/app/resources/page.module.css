@@ -1,0 +1,55 @@
+/* src/app/resources/page.module.css */
+
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.intro {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--foreground-secondary);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.item {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: transform 0.2s;
+}
+
+.item:hover {
+  transform: translateY(-2px);
+}
+
+.item h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: var(--foreground);
+}
+
+.item p {
+  margin: 0;
+  color: var(--foreground-secondary);
+}
+
+.item a {
+  text-decoration: none;
+  display: block;
+}

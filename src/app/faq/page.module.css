@@ -1,0 +1,31 @@
+/* src/app/faq/page.module.css */
+
+.container {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--foreground);
+}
+
+.faqList {
+  margin: 0;
+  padding: 0;
+}
+
+.question {
+  font-weight: bold;
+  margin: 1rem 0 0.25rem;
+  color: var(--foreground);
+}
+
+.answer {
+  margin: 0 0 1rem;
+  padding-left: 1rem;
+  color: var(--foreground-secondary);
+}

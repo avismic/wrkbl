@@ -1,0 +1,40 @@
+/* src/app/how-to-use/page.module.css */
+
+.container {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--foreground);
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.step {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.step h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: var(--foreground);
+}
+
+.step p {
+  margin: 0;
+  color: var(--foreground-secondary);
+}
