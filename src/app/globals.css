@@ -8,7 +8,7 @@
 :root {
   /* Core layout colors & sizing */
   --background: #808080;
-  --foreground: #171717;
+  --foreground: #8f7575;
   --header-height: 4rem;
   --font-belleza: 'Belleza', serif;
 
@@ -26,7 +26,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode overrides */
-    --background: #202020;
+    --background: #ffffff;
     --foreground: #ededed;
     /* Other variables remain as above */
   }
