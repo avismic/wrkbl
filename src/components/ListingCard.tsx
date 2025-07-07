@@ -39,20 +39,20 @@ interface Props {
 }
 
 export default function ListingCard({ job }: Props) {
-  // full URL
+  // ensure full URL
   const href = /^[a-zA-Z][\w+.-]*:\/\//.test(job.url)
     ? job.url
     : `https://${job.url}`;
 
-  // city + country text
+  // combine city & country
   const locationText = job.city
     ? `${job.city}${job.country ? `, ${job.country}` : ""}`
     : "";
 
-  // badge label
+  // uppercase badge
   const typeLabel = job.type === "internship" ? "INTERNSHIP" : "JOB";
 
-  // currency symbols
+  // currency symbol map
   const currencySymbols: Record<string, string> = {
     USD: "$",
     EUR: "€",
@@ -68,10 +68,10 @@ export default function ListingCard({ job }: Props) {
   };
   const symbol = currencySymbols[job.currency] ?? job.currency;
 
-  // salary line
+  // salary display
   const salaryText = `${symbol}${job.salaryLow.toLocaleString()} – ${symbol}${job.salaryHigh.toLocaleString()}`;
 
-  // **DATE FIX**: always coerce into a number & fallback if invalid
+  // **DATE FIX**: coerce postedAt into a number & fallback
   const raw = Number(job.postedAt);
   const date = isNaN(raw) ? new Date() : new Date(raw);
   const dateString = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
@@ -95,7 +95,7 @@ export default function ListingCard({ job }: Props) {
     >
       <div className={styles.meta}>
         <span className={styles.jobType}>{typeLabel}</span>
-        <span className={styles.postedAt}>{dateString}</span>  {/* ← now shows DD/MM/YYYY */}
+        <span className={styles.postedAt}>{dateString}</span>
       </div>
 
       <h2 className={styles.title}>{job.title}</h2>
