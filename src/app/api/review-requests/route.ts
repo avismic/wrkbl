@@ -6,7 +6,7 @@ import { buildGeminiPrompt } from "@/lib/geminiPrompt";
 
 /* ─── Gemini init ─── */
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model  = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 export async function POST(req: NextRequest) {
   const { ids } = (await req.json()) as { ids: string[] };
@@ -16,16 +16,23 @@ export async function POST(req: NextRequest) {
 
   const pool = await openDb();
 
-  // Build $1,$2... placeholders for pg
+  // Build $1,$2... placeholders
   const placeholders = ids.map((_, i) => `$${i + 1}`).join(",");
 
   // 1) Fetch from requests
   const selectSql = `
     SELECT
-      id, title, company,
-      city, country,
-      skills, type, url,
-      "salaryLow", "salaryHigh", officeType
+      id,
+      title,
+      company,
+      city,
+      country,
+      skills,
+      type,
+      url,
+      "salaryLow",
+      "salaryHigh",
+      "officeType"
     FROM requests
     WHERE id IN (${placeholders})
   `;
@@ -46,12 +53,12 @@ export async function POST(req: NextRequest) {
 
   // 2) Build prompt
   const prompt = buildGeminiPrompt(
-    rows.map((r: typeof rows[number]) => ({
-      id:         r.id,
-      title:      r.title,
-      company:    r.company,
-      url:        r.url,
-      salaryLow:  r.salaryLow,
+    rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      company: r.company,
+      url: r.url,
+      salaryLow: r.salaryLow,
       salaryHigh: r.salaryHigh,
     })),
     "requests"
