@@ -3,10 +3,11 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4rem;              /* fixed height */
+  height: 4.3rem;              /* fixed height */
   background: #4baaf3;
   z-index: 1000;
   box-sizing: border-box;
+  padding: 0 3%;
 }
 
 .spacer {
@@ -16,7 +17,7 @@
 .inner {
   box-sizing: border-box;    /* include padding in width calculation */
   width: 100%;
-  padding: 1rem 2rem;
+  padding: 0.7rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -36,15 +37,20 @@
 }
 
 .brandName {
-  margin-left: 0.5rem;
+  /* margin-left: 0.5rem;
   font-size: 1.25rem;
   font-weight: bold;
-  color: #fff;
+  color: #fff; */
+  font-family: var(--font-belleza);
+  font-size: 2rem; /* adjust as needed */
+  text-decoration: none;
+  color: black;
+  letter-spacing: 0.05em;
 }
 
 .nav {
   display: flex;
-  gap: 2rem;
+  gap: 4rem;
 }
 
 .nav a {

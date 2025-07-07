@@ -1,6 +1,7 @@
 .footer {
   background: #4baaf3;
   color: white;
+  padding: 0 3%;
 }
 
 .inner {
@@ -20,6 +21,15 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+}
+
+.brandName {
+  font-family: var(--font-belleza);
+  font-size: 2rem; /* adjust as needed */
+  text-decoration: none;
+  color: black;
+  letter-spacing: 0.05em;
+  font-weight: 400;
 }
 
 .address h2 {

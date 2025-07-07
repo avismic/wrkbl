@@ -1,3 +1,4 @@
+// src/app/layout.tsx
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import type { Metadata } from "next";
@@ -26,6 +27,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Load Belleza from Google Fonts */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Belleza&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pageContainer`}
       >

@@ -8,21 +8,21 @@ export default function Footer() {
       <div className={styles.inner}>
         {/* Brand & Address */}
         <div className={styles.brand}>
-          <Image
+          {/* <Image
             src="/logo.png"
             alt="Mayocity logo"
             width={110}
             height={110}
-          />
-          <div className={styles.address}>
-            <h2>Mayocity</h2>
-            <address>
+          /> */}
+            <h2 className={styles.brandName}>mayocity</h2>
+            <div className={styles.address}>
+            {/* <address>
               Jamshedpur
               <br />
               Jharkhand
               <br />
               India
-            </address>
+            </address> */}
           </div>
         </div>
 

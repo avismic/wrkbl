@@ -14,8 +14,8 @@ export default function Header() {
         <div className={styles.inner}>
           {/* Brand / Logo */}
           <Link href="/" className={styles.brand}>
-            <Image src="/logo.png" alt="MayoCity logo" width={32} height={32} />
-            <span className={styles.brandName}>Mayocity</span>
+            {/* <Image src="/logo.png" alt="MayoCity logo" width={32} height={32} /> */}
+            <span className={styles.brandName}>mayocity</span>
           </Link>
 
           {/* Mobile “hamburger” */}
