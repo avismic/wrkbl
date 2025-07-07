@@ -1,6 +1,5 @@
 // src/components/ListingCard.tsx
 import React from "react";
-import TiltedCard from "./TiltedCard";
 import styles from "./ListingCard.module.css";
 
 export interface Job {
@@ -28,9 +27,9 @@ export interface Job {
   benefits: string[];
   skills: string[];
   url: string;
-  postedAt: number;
+  postedAt: number;      // ← must be a timestamp number
   type: "job" | "internship";
-  currency: string;
+  currency: string;       // e.g. "USD"
   salaryLow: number;
   salaryHigh: number;
 }
@@ -40,39 +39,71 @@ interface Props {
 }
 
 export default function ListingCard({ job }: Props) {
+  // ensure full URL
   const href = /^[a-zA-Z][\w+.-]*:\/\//.test(job.url)
     ? job.url
     : `https://${job.url}`;
 
-  // build your existing card markup once
-  const cardContent = (
+  // combine city & country
+  const locationText = job.city
+    ? `${job.city}${job.country ? `, ${job.country}` : ""}`
+    : "";
+
+  // uppercase badge
+  const typeLabel = job.type === "internship" ? "INTERNSHIP" : "JOB";
+
+  // currency symbol map
+  const currencySymbols: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    AUD: "A$",
+    CAD: "C$",
+    CHF: "CHF",
+    CNY: "¥",
+    SEK: "kr",
+    NZD: "NZ$",
+    INR: "₹",
+  };
+  const symbol = currencySymbols[job.currency] ?? job.currency;
+
+  // salary display
+  const salaryText = `${symbol}${job.salaryLow.toLocaleString()} – ${symbol}${job.salaryHigh.toLocaleString()}`;
+
+  // **DATE FIX**: coerce postedAt into a number & fallback
+  const raw = Number(job.postedAt);
+  const date = isNaN(raw) ? new Date() : new Date(raw);
+  const dateString = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+
+  // hover-light effect
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    e.currentTarget.style.setProperty("--x", `${x}%`);
+    e.currentTarget.style.setProperty("--y", `${y}%`);
+  };
+
+  return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={styles.cardInner}
+      className={styles.card}
+      onMouseMove={handleMouseMove}
     >
       <div className={styles.meta}>
-        <span className={styles.jobType}>
-          {job.type === "internship" ? "INTERNSHIP" : "JOB"}
-        </span>
-        <span className={styles.postedAt}>
-          {(() => {
-            const d = new Date(Number(job.postedAt));
-            return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
-          })()}
-        </span>
+        <span className={styles.jobType}>{typeLabel}</span>
+        <span className={styles.postedAt}>{dateString}</span>
       </div>
 
       <h2 className={styles.title}>{job.title}</h2>
 
       <div className={styles.sub}>
         <span className={styles.company}>{job.company}</span>
-        {job.city && (
-          <span className={styles.location}>
-            · {job.city}
-            {job.country ? `, ${job.country}` : ""}
-          </span>
+        {locationText && (
+          <span className={styles.location}>· {locationText}</span>
         )}
       </div>
 
@@ -87,34 +118,15 @@ export default function ListingCard({ job }: Props) {
         ))}
       </div>
 
-      <div className={styles.salary}>
-        {/* currency symbol logic */}
-        {job.currency} {job.salaryLow.toLocaleString()} –{" "}
-        {job.currency} {job.salaryHigh.toLocaleString()}
-      </div>
+      <div className={styles.salary}>{salaryText}</div>
 
       <div className={styles.skills}>
-        {job.skills.map((s) => (
-          <span key={s} className={styles.chip}>
-            {s}
+        {job.skills.map((skill) => (
+          <span key={skill} className={styles.chip}>
+            {skill}
           </span>
         ))}
       </div>
     </a>
-  );
-
-  return (
-    <TiltedCard
-      containerWidth="100%"
-      containerHeight="auto"
-      imageWidth="100%"
-      imageHeight="auto"
-      scaleOnHover={1.02}
-      rotateAmplitude={8}
-      showMobileWarning={false}
-      showTooltip={false}
-      displayOverlayContent={true}
-      overlayContent={cardContent}
-    />
   );
 }
