@@ -44,6 +44,7 @@
 .jobType {
   font-weight: bold;
   letter-spacing: 1px;
+  color: #4aabf3;
 }
 .postedAt {
   opacity: 0.8;
