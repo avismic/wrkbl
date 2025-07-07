@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
       title: r.title,
       company: r.company,
       url: r.url,
-      salaryLow: r.salarylow,
-      salaryHigh: r.salaryhigh,
+      salaryLow: r.salaryLow,
+      salaryHigh: r.salaryHigh,
     })),
     "requests"
   );
