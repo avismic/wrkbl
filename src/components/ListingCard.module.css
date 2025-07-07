@@ -5,8 +5,8 @@
   display: block;
   padding: 1rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.154);
+  backdrop-filter: blur(15px);
   color: rgb(232, 184, 184);
   text-decoration: none;
   overflow: hidden;
