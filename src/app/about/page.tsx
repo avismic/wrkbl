@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 
 export default function AboutPage() {
   return (
+    <div className="styles.papacontainer">
     <main className={styles.container}>
       <h1 className={styles.heading}>About MayoCity</h1>
       <div className={styles.content}>
@@ -37,5 +38,6 @@ export default function AboutPage() {
         </p>
       </div>
     </main>
+    </div>
   );
 }

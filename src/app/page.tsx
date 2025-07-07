@@ -9,10 +9,11 @@ import styles from "./page.module.css";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Page() {
-  const { data: jobs = [], error, isLoading } = useSWR<Job[]>(
-    "/api/jobs",
-    fetcher
-  );
+  const {
+    data: jobs = [],
+    error,
+    isLoading,
+  } = useSWR<Job[]>("/api/jobs", fetcher);
 
   /* ────────────── search bar & type filter ────────────── */
   const [query, setQuery] = useState("");
@@ -33,27 +34,25 @@ export default function Page() {
   const [industryOptions, setIndustryOptions] = useState<string[]>([]);
 
   /* ────────────── selected sets ────────────── */
-  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(
     new Set()
   );
   const [selectedCompanies, setSelectedCompanies] = useState<Set<string>>(
     new Set()
   );
-  const [selectedExperiences, setSelectedExperiences] = useState<
-    Set<string>
-  >(new Set());
-  const [selectedOfficeTypes, setSelectedOfficeTypes] = useState<
-    Set<string>
-  >(new Set());
-  const [selectedEmployments, setSelectedEmployments] = useState<
-    Set<string>
-  >(new Set());
-  const [selectedIndustries, setSelectedIndustries] = useState<
-    Set<string>
-  >(new Set());
+  const [selectedExperiences, setSelectedExperiences] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedOfficeTypes, setSelectedOfficeTypes] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedEmployments, setSelectedEmployments] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedIndustries, setSelectedIndustries] = useState<Set<string>>(
+    new Set()
+  );
 
   /* ────────────── search boxes inside dropdowns ────────────── */
   const [skillSearch, setSkillSearch] = useState("");
@@ -88,30 +87,22 @@ export default function Page() {
     setSelectedCompanies(new Set(comps));
 
     // Experience Levels
-    const exps = Array.from(
-      new Set(jobs.map((j) => j.experienceLevel))
-    ).sort();
+    const exps = Array.from(new Set(jobs.map((j) => j.experienceLevel))).sort();
     setExperienceOptions(exps);
     setSelectedExperiences(new Set(exps));
 
     // Office Types
-    const offices = Array.from(
-      new Set(jobs.map((j) => j.officeType))
-    ).sort();
+    const offices = Array.from(new Set(jobs.map((j) => j.officeType))).sort();
     setOfficeTypeOptions(offices);
     setSelectedOfficeTypes(new Set(offices));
 
     // Employment Types
-    const emps = Array.from(
-      new Set(jobs.map((j) => j.employmentType))
-    ).sort();
+    const emps = Array.from(new Set(jobs.map((j) => j.employmentType))).sort();
     setEmploymentOptions(emps);
     setSelectedEmployments(new Set(emps));
 
     // Industries
-    const inds = Array.from(
-      new Set(jobs.flatMap((j) => j.industries))
-    ).sort();
+    const inds = Array.from(new Set(jobs.flatMap((j) => j.industries))).sort();
     setIndustryOptions(inds);
     setSelectedIndustries(new Set(inds));
   }, [jobs]);
@@ -153,18 +144,27 @@ export default function Page() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return jobs.filter((job) => {
-      if (
-        q &&
-        !job.title.toLowerCase().includes(q) &&
-        !job.company.toLowerCase().includes(q)
-      )
-        return false;
+      // if (
+      //   q &&
+      //   !job.title.toLowerCase().includes(q) &&
+      //   !job.company.toLowerCase().includes(q)
+      // )
+      //   return false;
+
+      if (q) {
+        const inTitle = job.title.toLowerCase().includes(q);
+        const inCompany = job.company.toLowerCase().includes(q);
+        const inSkills = job.skills.some((s) => s.toLowerCase().includes(q));
+        const inExp = job.experienceLevel.toLowerCase().includes(q);
+        const inEmp = job.employmentType.toLowerCase().includes(q);
+
+        if (!(inTitle || inCompany || inSkills || inExp || inEmp)) {
+          return false;
+        }
+      }
 
       if (!typeFilter[job.type]) return false;
-      if (
-        selectedSkills.size &&
-        !job.skills.some((s) => selectedSkills.has(s))
-      )
+      if (selectedSkills.size && !job.skills.some((s) => selectedSkills.has(s)))
         return false;
 
       const locStr = `${job.city}, ${job.country}`;
@@ -202,13 +202,13 @@ export default function Page() {
   /* ────────────── early returns ────────────── */
   if (error)
     return <p style={{ textAlign: "center" }}>Failed to load listings.</p>;
-  if (isLoading)
-    return <p style={{ textAlign: "center" }}>Loading…</p>;
+  if (isLoading) return <p style={{ textAlign: "center" }}>Loading…</p>;
 
   return (
     <main className={styles.glassContainer}>
       <p className={styles.subtitle}>
-        Reach out to companies <span className={styles.highlight}>directly</span>
+        Reach out to companies{" "}
+        <span className={styles.highlight}>directly</span>
       </p>
 
       {/* search bar */}
@@ -296,9 +296,7 @@ export default function Page() {
             <div className={styles.filterActions}>
               <button
                 className={styles.actionBtn}
-                onClick={() =>
-                  setSelectedLocations(new Set(locationOptions))
-                }
+                onClick={() => setSelectedLocations(new Set(locationOptions))}
               >
                 Select All
               </button>
@@ -340,9 +338,7 @@ export default function Page() {
             <div className={styles.filterActions}>
               <button
                 className={styles.actionBtn}
-                onClick={() =>
-                  setSelectedCompanies(new Set(companyOptions))
-                }
+                onClick={() => setSelectedCompanies(new Set(companyOptions))}
               >
                 Select All
               </button>
@@ -413,9 +409,7 @@ export default function Page() {
                   <input
                     type="checkbox"
                     checked={selectedExperiences.has(exp)}
-                    onChange={() =>
-                      toggleSet(exp, setSelectedExperiences)
-                    }
+                    onChange={() => toggleSet(exp, setSelectedExperiences)}
                   />{" "}
                   {exp}
                 </label>
@@ -459,9 +453,7 @@ export default function Page() {
                   <input
                     type="checkbox"
                     checked={selectedOfficeTypes.has(office)}
-                    onChange={() =>
-                      toggleSet(office, setSelectedOfficeTypes)
-                    }
+                    onChange={() => toggleSet(office, setSelectedOfficeTypes)}
                   />{" "}
                   {office}
                 </label>
@@ -505,9 +497,7 @@ export default function Page() {
                   <input
                     type="checkbox"
                     checked={selectedEmployments.has(emp)}
-                    onChange={() =>
-                      toggleSet(emp, setSelectedEmployments)
-                    }
+                    onChange={() => toggleSet(emp, setSelectedEmployments)}
                   />{" "}
                   {emp}
                 </label>
@@ -522,16 +512,16 @@ export default function Page() {
             <div className={styles.filterActions}>
               <button
                 className={styles.actionBtn}
-                onClick={() =>
-                  setSelectedIndustries(new Set(industryOptions))
-                }
+                onClick={() => setSelectedIndustries(new Set(industryOptions))}
               >
                 Select All
               </button>
               <button
                 className={styles.actionBtn}
                 onClick={() => setSelectedIndustries(new Set())}
-              >Unselect All</button>
+              >
+                Unselect All
+              </button>
             </div>
             <input
               type="text"
@@ -549,9 +539,7 @@ export default function Page() {
                   <input
                     type="checkbox"
                     checked={selectedIndustries.has(ind)}
-                    onChange={() =>
-                      toggleSet(ind, setSelectedIndustries)
-                    }
+                    onChange={() => toggleSet(ind, setSelectedIndustries)}
                   />{" "}
                   {ind}
                 </label>
