@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import useSWR from "swr";
-import ListingCard, { Job } from "../components/ListingCard";
+import ListingCard, { Job } from "@/components/ListingCard";
 import styles from "./page.module.css";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -36,9 +36,9 @@ export default function Page() {
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(
     new Set()
   );
-  const [selectedLocations, setSelectedLocations] = useState<
-    Set<string>
-  >(new Set());
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(
+    new Set()
+  );
   const [selectedCompanies, setSelectedCompanies] = useState<Set<string>>(
     new Set()
   );
@@ -70,45 +70,45 @@ export default function Page() {
     if (inited.current || jobs.length === 0) return;
     inited.current = true;
 
-    // skills
+    // Skills
     const skills = Array.from(new Set(jobs.flatMap((j) => j.skills))).sort();
     setSkillOptions(skills);
     setSelectedSkills(new Set(skills));
 
-    // locations: compute "City, Country"
+    // Locations (City, Country)
     const locs = Array.from(
       new Set(jobs.map((j) => `${j.city}, ${j.country}`))
     ).sort();
     setLocationOptions(locs);
     setSelectedLocations(new Set(locs));
 
-    // companies
+    // Companies
     const comps = Array.from(new Set(jobs.map((j) => j.company))).sort();
     setCompanyOptions(comps);
     setSelectedCompanies(new Set(comps));
 
-    // experiences
+    // Experience Levels
     const exps = Array.from(
       new Set(jobs.map((j) => j.experienceLevel))
     ).sort();
     setExperienceOptions(exps);
     setSelectedExperiences(new Set(exps));
 
-    // office types
+    // Office Types
     const offices = Array.from(
       new Set(jobs.map((j) => j.officeType))
     ).sort();
     setOfficeTypeOptions(offices);
     setSelectedOfficeTypes(new Set(offices));
 
-    // employments
+    // Employment Types
     const emps = Array.from(
       new Set(jobs.map((j) => j.employmentType))
     ).sort();
     setEmploymentOptions(emps);
     setSelectedEmployments(new Set(emps));
 
-    // industries
+    // Industries
     const inds = Array.from(
       new Set(jobs.flatMap((j) => j.industries))
     ).sort();
@@ -205,14 +205,13 @@ export default function Page() {
   if (isLoading)
     return <p style={{ textAlign: "center" }}>Loading…</p>;
 
-  /* ───────────────────────────────────────────── */
   return (
     <main className={styles.glassContainer}>
       <p className={styles.subtitle}>
         Reach out to companies <span className={styles.highlight}>directly</span>
       </p>
 
-      {/* ───── search bar ───── */}
+      {/* search bar */}
       <div className={styles.searchContainer}>
         <input
           type="text"
@@ -223,9 +222,9 @@ export default function Page() {
         />
       </div>
 
-      {/* ───── filter dropdowns ───── */}
+      {/* all your filter dropdowns */}
       <div className={styles.filtersContainer}>
-        {/* Type */}
+        {/* 1) Type */}
         <div className={styles.filterContainer}>
           <button className={styles.filterLabel}>Type ▾</button>
           <div className={styles.filterDropdown}>
@@ -248,7 +247,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Skills */}
+        {/* 2) Skills */}
         <div className={styles.filterContainer}>
           <button className={styles.filterLabel}>Skills ▾</button>
           <div className={styles.filterDropdown}>
@@ -267,11 +266,11 @@ export default function Page() {
               </button>
             </div>
             <input
-              className={styles.filterSearch}
               type="text"
               placeholder="Search skills…"
               value={skillSearch}
               onChange={(e) => setSkillSearch(e.target.value)}
+              className={styles.filterSearch}
             />
             {skillOptions
               .filter((s) =>
@@ -290,7 +289,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Location */}
+        {/* 3) Location */}
         <div className={styles.filterContainer}>
           <button className={styles.filterLabel}>Location ▾</button>
           <div className={styles.filterDropdown}>
@@ -311,11 +310,11 @@ export default function Page() {
               </button>
             </div>
             <input
-              className={styles.filterSearch}
               type="text"
               placeholder="Search locations…"
               value={locationSearch}
               onChange={(e) => setLocationSearch(e.target.value)}
+              className={styles.filterSearch}
             />
             {locationOptions
               .filter((l) =>
@@ -334,7 +333,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Company */}
+        {/* 4) Company */}
         <div className={styles.filterContainer}>
           <button className={styles.filterLabel}>Company ▾</button>
           <div className={styles.filterDropdown}>
@@ -355,11 +354,11 @@ export default function Page() {
               </button>
             </div>
             <input
-              className={styles.filterSearch}
               type="text"
               placeholder="Search companies…"
               value={companySearch}
               onChange={(e) => setCompanySearch(e.target.value)}
+              className={styles.filterSearch}
             />
             {companyOptions
               .filter((c) =>
@@ -378,19 +377,207 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Experience Level */}...
-        {/* (rest of dropdowns unchanged) */}
+        {/* 5) Experience Level */}
+        <div className={styles.filterContainer}>
+          <button className={styles.filterLabel}>Experience ▾</button>
+          <div className={styles.filterDropdown}>
+            <div className={styles.filterActions}>
+              <button
+                className={styles.actionBtn}
+                onClick={() =>
+                  setSelectedExperiences(new Set(experienceOptions))
+                }
+              >
+                Select All
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => setSelectedExperiences(new Set())}
+              >
+                Unselect All
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search experience…"
+              value={experienceSearch}
+              onChange={(e) => setExperienceSearch(e.target.value)}
+              className={styles.filterSearch}
+            />
+            {experienceOptions
+              .filter((exp) =>
+                exp.toLowerCase().includes(experienceSearch.toLowerCase())
+              )
+              .map((exp) => (
+                <label key={exp} className={styles.filterItem}>
+                  <input
+                    type="checkbox"
+                    checked={selectedExperiences.has(exp)}
+                    onChange={() =>
+                      toggleSet(exp, setSelectedExperiences)
+                    }
+                  />{" "}
+                  {exp}
+                </label>
+              ))}
+          </div>
+        </div>
 
+        {/* 6) Office Type */}
+        <div className={styles.filterContainer}>
+          <button className={styles.filterLabel}>Location Type ▾</button>
+          <div className={styles.filterDropdown}>
+            <div className={styles.filterActions}>
+              <button
+                className={styles.actionBtn}
+                onClick={() =>
+                  setSelectedOfficeTypes(new Set(officeTypeOptions))
+                }
+              >
+                Select All
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => setSelectedOfficeTypes(new Set())}
+              >
+                Unselect All
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search types…"
+              value={officeTypeSearch}
+              onChange={(e) => setOfficeTypeSearch(e.target.value)}
+              className={styles.filterSearch}
+            />
+            {officeTypeOptions
+              .filter((o) =>
+                o.toLowerCase().includes(officeTypeSearch.toLowerCase())
+              )
+              .map((office) => (
+                <label key={office} className={styles.filterItem}>
+                  <input
+                    type="checkbox"
+                    checked={selectedOfficeTypes.has(office)}
+                    onChange={() =>
+                      toggleSet(office, setSelectedOfficeTypes)
+                    }
+                  />{" "}
+                  {office}
+                </label>
+              ))}
+          </div>
+        </div>
+
+        {/* 7) Employment Type */}
+        <div className={styles.filterContainer}>
+          <button className={styles.filterLabel}>Employment ▾</button>
+          <div className={styles.filterDropdown}>
+            <div className={styles.filterActions}>
+              <button
+                className={styles.actionBtn}
+                onClick={() =>
+                  setSelectedEmployments(new Set(employmentOptions))
+                }
+              >
+                Select All
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => setSelectedEmployments(new Set())}
+              >
+                Unselect All
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search employment…"
+              value={employmentSearch}
+              onChange={(e) => setEmploymentSearch(e.target.value)}
+              className={styles.filterSearch}
+            />
+            {employmentOptions
+              .filter((emp) =>
+                emp.toLowerCase().includes(employmentSearch.toLowerCase())
+              )
+              .map((emp) => (
+                <label key={emp} className={styles.filterItem}>
+                  <input
+                    type="checkbox"
+                    checked={selectedEmployments.has(emp)}
+                    onChange={() =>
+                      toggleSet(emp, setSelectedEmployments)
+                    }
+                  />{" "}
+                  {emp}
+                </label>
+              ))}
+          </div>
+        </div>
+
+        {/* 8) Industry */}
+        <div className={styles.filterContainer}>
+          <button className={styles.filterLabel}>Industry ▾</button>
+          <div className={styles.filterDropdown}>
+            <div className={styles.filterActions}>
+              <button
+                className={styles.actionBtn}
+                onClick={() =>
+                  setSelectedIndustries(new Set(industryOptions))
+                }
+              >
+                Select All
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => setSelectedIndustries(new Set())}
+              >Unselect All</button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search industries…"
+              value={industrySearch}
+              onChange={(e) => setIndustrySearch(e.target.value)}
+              className={styles.filterSearch}
+            />
+            {industryOptions
+              .filter((i) =>
+                i.toLowerCase().includes(industrySearch.toLowerCase())
+              )
+              .map((ind) => (
+                <label key={ind} className={styles.filterItem}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIndustries.has(ind)}
+                    onChange={() =>
+                      toggleSet(ind, setSelectedIndustries)
+                    }
+                  />{" "}
+                  {ind}
+                </label>
+              ))}
+          </div>
+        </div>
       </div>
 
-      {/* results counter + reset button */}...
-      {/* listings and load-more unchanged */}...
+      {/* results + reset */}
+      <div className={styles.resultsBar}>
+        <span className={styles.resultsText}>
+          {filtered.length} result{filtered.length !== 1 && "s"}
+        </span>
+        <button className={styles.resetBtn} onClick={resetFilters}>
+          Reset filters
+        </button>
+      </div>
 
+      {/* listings */}
       <section className={styles.listingsContainer}>
         {visibleJobs.map((job) => (
           <ListingCard key={job.id} job={job} />
         ))}
       </section>
+
+      {/* load more */}
       {visibleCount < filtered.length && (
         <div style={{ textAlign: "center", margin: "1rem 0" }}>
           <button
