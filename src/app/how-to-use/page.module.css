@@ -22,7 +22,7 @@
 }
 
 .step {
-  background: rgba(255, 255, 255, 0.8);
+  background: #f9f9f9;
   backdrop-filter: blur(8px);
   border-radius: 0.5rem;
   padding: 1rem;
@@ -31,10 +31,10 @@
 .step h2 {
   margin: 0 0 0.5rem;
   font-size: 1.25rem;
-  color: var(--foreground);
+  color: black;
 }
 
 .step p {
   margin: 0;
-  color: var(--foreground-secondary);
+  color: rgb(80, 80, 80);
 }

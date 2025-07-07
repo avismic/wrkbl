@@ -90,7 +90,7 @@ export default function WorkWithUsPage() {
         </label>
 
         <label>
-          Message
+          What are you so good at?
           <textarea
             name="message"
             rows={4}
@@ -100,7 +100,18 @@ export default function WorkWithUsPage() {
           />
         </label>
 
-        <label className={styles.fileInput}>
+        <label>
+          Link to your resume
+          <textarea
+            name="message"
+            rows={2}
+            value={form.message}
+            onChange={onChange}
+            required
+          />
+        </label>
+
+        {/* <label className={styles.fileInput}>
           Upload Resume
           <input
             type="file"
@@ -116,7 +127,7 @@ export default function WorkWithUsPage() {
           className={styles.submitBtn}
         >
           {status === "submitting" ? "Sending…" : "Submit"}
-        </button>
+        </button> */}
       </form>
     </main>
   );
