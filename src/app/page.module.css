@@ -49,6 +49,7 @@
   position: relative;
 }
 
+/* Allow the filter button text to wrap fully */
 .filterLabel {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
@@ -58,6 +59,9 @@
   cursor: pointer;
   transition: background 0.3s;
   color: rgba(255, 255, 255, 0.904);
+
+  /* ← added: wrap instead of ellipsis */
+  white-space: normal;
 }
 
 .filterContainer:hover .filterLabel {
@@ -119,11 +123,15 @@
   backdrop-filter: blur(10px);
 }
 
+/* If you ever need items to wrap too: */
 .filterItem {
   display: block;
   margin-bottom: 0.25rem;
   font-size: 0.875rem;
   color: black;
+
+  /* ← added: allow wrapping here as well */
+  white-space: normal;
 }
 
 .listingsContainer {
