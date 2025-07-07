@@ -27,9 +27,9 @@ export interface Job {
   benefits: string[];
   skills: string[];
   url: string;
-  postedAt: number;      // ← must be a timestamp number
+  postedAt: number;
   type: "job" | "internship";
-  currency: string;       // e.g. "USD"
+  currency: string;          // e.g. "USD"
   salaryLow: number;
   salaryHigh: number;
 }
@@ -39,20 +39,17 @@ interface Props {
 }
 
 export default function ListingCard({ job }: Props) {
-  // ensure full URL
   const href = /^[a-zA-Z][\w+.-]*:\/\//.test(job.url)
     ? job.url
     : `https://${job.url}`;
 
-  // combine city & country
   const locationText = job.city
     ? `${job.city}${job.country ? `, ${job.country}` : ""}`
     : "";
 
-  // uppercase badge
   const typeLabel = job.type === "internship" ? "INTERNSHIP" : "JOB";
 
-  // currency symbol map
+  /* ------------ NEW: code ➜ symbol map ------------ */
   const currencySymbols: Record<string, string> = {
     USD: "$",
     EUR: "€",
@@ -67,16 +64,13 @@ export default function ListingCard({ job }: Props) {
     INR: "₹",
   };
   const symbol = currencySymbols[job.currency] ?? job.currency;
+  /* ------------------------------------------------- */
 
-  // salary display
   const salaryText = `${symbol}${job.salaryLow.toLocaleString()} – ${symbol}${job.salaryHigh.toLocaleString()}`;
 
-  // **DATE FIX**: coerce postedAt into a number & fallback
-  const raw = Number(job.postedAt);
-  const date = isNaN(raw) ? new Date() : new Date(raw);
+  const date = new Date(job.postedAt);
   const dateString = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 
-  // hover-light effect
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
