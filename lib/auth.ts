@@ -3,6 +3,19 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const authOptions: NextAuthOptions = {
+  // Use a JWT session strategy
+  session: {
+    strategy: "jwt",
+  },
+
+  // Specify your custom sign-in page
+  pages: {
+    signIn: "/admin/login",
+  },
+
+  // 💡 **ADD THIS**: pull in your NEXTAUTH_SECRET
+  secret: process.env.NEXTAUTH_SECRET,
+
   providers: [
     CredentialsProvider({
       name: "Admin Credentials",
@@ -11,23 +24,21 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(creds) {
-        // Guard against undefined
         if (!creds) return null;
-
         const { username, password } = creds;
+        // simple check against your env vars
         if (
           username === process.env.ADMIN_USER &&
           password === process.env.ADMIN_PASS
         ) {
-          return { id: username };
+          // you can include additional fields here if needed
+          return { id: username, name: username };
         }
         return null;
       },
     }),
   ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
 };
 
-// route handler
+// Export the NextAuth route handler
 export default NextAuth(authOptions);
