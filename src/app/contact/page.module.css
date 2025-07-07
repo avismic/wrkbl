@@ -8,6 +8,7 @@
   backdrop-filter: blur(10px);
   border-radius: 0.5rem;
   color: black;
+  box-shadow: 0 12px 24px #4baaf3a7;
 }
 
 .container h1 {
