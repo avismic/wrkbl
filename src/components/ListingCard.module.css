@@ -27,7 +27,7 @@
   width: 0;
   height: 0;
   pointer-events: none;
-  background: radial-gradient(circle at center, rgba(94, 94, 94, 0.195) 0%, transparent 80%);
+  background: radial-gradient(circle at center, #4baaf365 0%, transparent 80%);
   transform: translate(-50%, -50%);
   transition: width 0.2s ease, height 0.2s ease;
 }
