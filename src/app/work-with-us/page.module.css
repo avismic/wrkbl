@@ -9,7 +9,7 @@
   border-radius: 0.5rem;
 }
 
-h1 {
+.container h1 {
   text-align: center;
   margin-bottom: 1rem;
   font-size: 2rem;
@@ -34,16 +34,16 @@ h1 {
   gap: 1rem;
 }
 
-label {
+.container label {
   display: flex;
   flex-direction: column;
   font-size: 0.95rem;
   color: var(--foreground);
 }
 
-input[type="text"],
-input[type="email"],
-textarea {
+.container input[type="text"],
+.container input[type="email"],
+.container textarea {
   margin-top: 0.25rem;
   padding: 0.5rem;
   font-size: 1rem;
