@@ -2,11 +2,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { buildGeminiPrompt } from "@/lib/geminiPrompt";  
+import { buildGeminiPrompt } from "@/lib/geminiPrompt";
 
 /* ─── Gemini init ─── */
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model  = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 const cols = `
   id,title,company,
@@ -24,16 +24,19 @@ export async function POST(req: NextRequest) {
   }
 
   const pool = await openDb();
-  const placeholders = ids.map(() => "?").join(",");
-  const rows: any[] = await pool.all(
-    `SELECT
-        id, title, company,
-        city, country, skills, type, url,
-        salaryLow, salaryHigh, officeType
-     FROM requests
-     WHERE id IN (${placeholders})`,
-    ...ids
-  );
+  // build placeholder list
+  const placeholders = ids.map((_, i) => `$${i + 1}`).join(",");
+  // fetch the selected rows
+  const selectSql = `
+    SELECT
+      id, title, company,
+      city, country, skills, type, url,
+      salaryLow, salaryHigh, officeType
+    FROM requests
+    WHERE id IN (${placeholders})
+  `;
+  const selectRes = await pool.query(selectSql, ids);
+  const rows = selectRes.rows;
 
   /* ─── build prompt ─── */
   const prompt = buildGeminiPrompt(
@@ -42,23 +45,28 @@ export async function POST(req: NextRequest) {
       title: r.title,
       company: r.company,
       url: r.url,
-      salaryLow: r.salaryLow,
-      salaryHigh: r.salaryHigh,
+      salaryLow: r.salarylow,
+      salaryHigh: r.salaryhigh,
     })),
     "requests"
   );
-  
+
   /* ─── call Gemini ─── */
-  const rsp     = await model.generateContent(prompt);
+  const rsp = await model.generateContent(prompt);
   const rawText = rsp.response.text().trim();
 
   /* ─── tolerant JSON parse ─── */
   const tryParse = (raw: string) => {
     const noFence = raw.replace(/^```[\s\S]*?\n/, "").replace(/```$/, "").trim();
-    try { return JSON.parse(noFence); } catch {}
-    const f = noFence.indexOf("{"), l = noFence.lastIndexOf("}");
+    try {
+      return JSON.parse(noFence);
+    } catch {}
+    const f = noFence.indexOf("{"),
+      l = noFence.lastIndexOf("}");
     if (f !== -1 && l !== -1 && l > f) {
-      try { return JSON.parse(noFence.slice(f, l + 1)); } catch {}
+      try {
+        return JSON.parse(noFence.slice(f, l + 1));
+      } catch {}
     }
     return null;
   };
@@ -77,16 +85,18 @@ export async function POST(req: NextRequest) {
     .map(([id]) => id);
 
   if (spamIds.length) {
-    const ph = spamIds.map(() => "?").join(",");
-    await pool.run(
-      `INSERT OR IGNORE INTO trash (${cols})
-       SELECT ${cols} FROM requests WHERE id IN (${ph})`,
-      ...spamIds
-    );
-    await pool.run(
-      `DELETE FROM requests WHERE id IN (${ph})`,
-      ...spamIds
-    );
+    // move to trash
+    const ph2 = spamIds.map((_, i) => `$${i + 1}`).join(",");
+    const insertSql = `
+      INSERT INTO trash (${cols})
+      SELECT ${cols} FROM requests WHERE id IN (${ph2})
+      ON CONFLICT DO NOTHING
+    `;
+    await pool.query(insertSql, spamIds);
+
+    // delete from requests
+    const deleteSql = `DELETE FROM requests WHERE id IN (${ph2})`;
+    await pool.query(deleteSql, spamIds);
   }
 
   return NextResponse.json({ results, movedToTrash: spamIds });
