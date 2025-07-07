@@ -5,9 +5,9 @@
   display: block;
   padding: 1rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.154);
+  background: rgba(255, 255, 255, 0.808);
   backdrop-filter: blur(15px);
-  color: #4aabf3;
+  color: rgb(0, 0, 0);
   text-decoration: none;
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
