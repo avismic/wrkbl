@@ -56,24 +56,20 @@ export async function GET() {
     id: r.id,
     title: r.title,
     company: r.company,
-    // legacy `location` for backwards‐compatibility
-    location: `${r.city} – ${r.country}`,
+    location: `${r.city} – ${r.country}`, // legacy
     city: r.city,
     country: r.country,
     officeType: r.officeType,
     experienceLevel: r.experienceLevel,
     employmentType: r.employmentType,
-
-    // === NEW: return as an array ===
     industries: r.industry
       ? r.industry.split(",").map((s: string) => s.trim())
       : [],
-
     visa: Boolean(r.visa),
     benefits: r.benefits.split(",").map((b: string) => b.trim()),
     skills: r.skills.split(",").map((s: string) => s.trim()),
     url: r.url,
-    postedAt: r.postedAt,
+    postedAt: Number(r.postedAt),
     remote: Boolean(r.remote),
     type: r.type === "i" ? "internship" : "job",
     salaryLow: r.salaryLow,
@@ -147,7 +143,7 @@ export async function POST(req: NextRequest) {
   `;
 
   for (const job of jobsToInsert) {
-    const industryValue = Array.isArray(job.industries)
+    const industryValue: string = Array.isArray(job.industries)
       ? job.industries.join(",")
       : typeof job.industries === "string"
       ? job.industries
@@ -163,12 +159,12 @@ export async function POST(req: NextRequest) {
       job.experienceLevel,
       job.employmentType,
       industryValue,
-      job.visa,
+      job.visa ? 1 : 0,
       job.benefits,
       job.skills.join(","),
       job.url,
       job.postedAt,
-      job.remote,
+      job.remote ? 1 : 0,
       job.type,
       job.salaryLow,
       job.salaryHigh,
