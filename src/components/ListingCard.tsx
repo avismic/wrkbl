@@ -39,17 +39,20 @@ interface Props {
 }
 
 export default function ListingCard({ job }: Props) {
+  // ensure full URL
   const href = /^[a-zA-Z][\w+.-]*:\/\//.test(job.url)
     ? job.url
     : `https://${job.url}`;
 
+  // combine city & country
   const locationText = job.city
     ? `${job.city}${job.country ? `, ${job.country}` : ""}`
     : "";
 
+  // uppercase badge
   const typeLabel = job.type === "internship" ? "INTERNSHIP" : "JOB";
 
-  /* ------------ NEW: code ➜ symbol map ------------ */
+  // currency symbol map
   const currencySymbols: Record<string, string> = {
     USD: "$",
     EUR: "€",
@@ -64,13 +67,15 @@ export default function ListingCard({ job }: Props) {
     INR: "₹",
   };
   const symbol = currencySymbols[job.currency] ?? job.currency;
-  /* ------------------------------------------------- */
 
+  // salary display
   const salaryText = `${symbol}${job.salaryLow.toLocaleString()} – ${symbol}${job.salaryHigh.toLocaleString()}`;
 
+  // correctly format postedAt
   const date = new Date(job.postedAt);
   const dateString = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 
+  // hover light effect
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -122,5 +127,5 @@ export default function ListingCard({ job }: Props) {
         ))}
       </div>
     </a>
-  );
+);
 }
