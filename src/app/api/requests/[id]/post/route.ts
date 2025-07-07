@@ -1,4 +1,4 @@
-// src/app/api/trash/[id]/post/route.ts
+// src/app/api/requests/[id]/post/route.ts
 import { NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
@@ -11,16 +11,16 @@ export async function POST(
 
   const pool = await openDb();
 
-  // 2) fetch the trashed row
+  // 2) fetch the pending row from `requests`
   const { rows } = await pool.query<{
     id: string;
     title: string;
     company: string;
     city: string;
     country: string;
-    officeType: string;
-    experienceLevel: string;
-    employmentType: string;
+    "officeType": string;
+    "experienceLevel": string;
+    "employmentType": string;
     industry: string | null;
     visa: number;
     benefits: string;
@@ -29,8 +29,8 @@ export async function POST(
     postedAt: number;
     remote: number;
     type: "j" | "i";
-    salaryLow: number;
-    salaryHigh: number;
+    "salaryLow": number;
+    "salaryHigh": number;
     currency: string;
   }>(
     `
@@ -41,7 +41,7 @@ export async function POST(
       visa, benefits,
       skills, url, "postedAt",
       remote, type, "salaryLow", "salaryHigh", currency
-    FROM trash
+    FROM requests
     WHERE id = $1
     `,
     [id]
@@ -52,7 +52,7 @@ export async function POST(
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  // 3) insert into jobs
+  // 3) insert into `jobs`
   await pool.query(
     `
     INSERT INTO jobs (
@@ -94,8 +94,8 @@ export async function POST(
     ]
   );
 
-  // 4) delete it from trash
-  await pool.query(`DELETE FROM trash WHERE id = $1`, [id]);
+  // 4) delete it from `requests`
+  await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ posted: true });
 }

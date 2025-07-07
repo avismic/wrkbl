@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
       title: r.title,
       company: r.company,
       url: r.url,
-      salaryLow: r.salaryLow,
-      salaryHigh: r.salaryHigh,
+      salaryLow: r.salarylow,
+      salaryHigh: r.salaryhigh,
     })),
     "requests"
   );
@@ -57,7 +57,10 @@ export async function POST(req: NextRequest) {
 
   /* ─── tolerant JSON parse ─── */
   const tryParse = (raw: string) => {
-    const noFence = raw.replace(/^```[\s\S]*?\n/, "").replace(/```$/, "").trim();
+    const noFence = raw
+      .replace(/^```[\s\S]*?\n/, "")
+      .replace(/```$/, "")
+      .trim();
     try {
       return JSON.parse(noFence);
     } catch {}
