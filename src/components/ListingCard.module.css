@@ -1,6 +1,6 @@
 /* src/components/ListingCard.module.css */
 
-.card {
+.cardInner {
   position: relative;
   display: block;
   padding: 1rem;
@@ -12,13 +12,13 @@
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.card:hover {
+.cardInner:hover {
   transform: scale(1.02);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* Hover-light spotlight */
-.card::before {
+.cardInner::before {
   content: "";
   position: absolute;
   top: var(--y);
@@ -30,7 +30,7 @@
   transform: translate(-50%, -50%);
   transition: width 0.2s ease, height 0.2s ease;
 }
-.card:hover::before {
+.cardInner:hover::before {
   width: 200%;
   height: 200%;
 }
