@@ -8,7 +8,7 @@ import { industryOptions, benefitOptions, currencyOptions } from "./options";
 
 interface Props {
   initial?: Partial<JobDraft>;
-  onSubmit: (payload: any) => Promise<void> | void;
+  onSubmit: (payload: any) => void | Promise<void>; // loosened to avoid typeof issues
   onCancel?: () => void;
   editMode?: boolean;
   loading?: boolean;
@@ -23,15 +23,15 @@ export default function JobForm({
 }: Props) {
   const { form, onField, toggleArr, toPayload } = useJobForm(initial);
 
-  const onChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    // Use currentTarget so TS knows it's either HTMLInputElement or HTMLSelectElement
-    const t = e.currentTarget;
-    const { name, value, type } = t;
-    // only inputs have .checked
-    const checked = type === "checkbox" && (t as HTMLInputElement).checked;
-    onField(name as any, type === "checkbox" ? checked : value);
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+    const { name, value, type } = e.currentTarget;
+    const checked: boolean =
+      type === "checkbox" ? (e.currentTarget as HTMLInputElement).checked : false;
+    onField(
+      name as keyof JobDraft,
+      type === "checkbox" ? checked : value
+    );
+
     if (name === "experienceLevel") {
       onField("type", value === "Intern" ? "internship" : "");
     }
@@ -46,12 +46,14 @@ export default function JobForm({
           placeholder="Title"
           value={form.title}
           onChange={onChange}
+          required
         />
         <input
           name="company"
           placeholder="Company"
           value={form.company}
           onChange={onChange}
+          required
         />
 
         {/* Row 2 */}
@@ -73,6 +75,7 @@ export default function JobForm({
           name="officeType"
           value={form.officeType}
           onChange={onChange}
+          required
         >
           <option value="" disabled>
             Location Type (Select one)
@@ -87,43 +90,59 @@ export default function JobForm({
           name="experienceLevel"
           value={form.experienceLevel}
           onChange={onChange}
+          required
         >
           <option value="" disabled>
             Select Experience Level
           </option>
-          <option>Intern</option>
-          <option>Entry-level</option>
-          <option>Associate/Mid-level</option>
-          <option>Senior-level</option>
-          <option>Managerial</option>
-          <option>Executive</option>
+          {[
+            "Intern",
+            "Entry-level",
+            "Associate/Mid-level",
+            "Senior-level",
+            "Managerial",
+            "Executive",
+          ].map((lvl: string) => (
+            <option key={lvl} value={lvl}>
+              {lvl}
+            </option>
+          ))}
         </select>
 
         <select
           name="employmentType"
           value={form.employmentType}
           onChange={onChange}
+          required
         >
           <option value="" disabled>
             Select Employment Type
           </option>
-          <option>Full-time</option>
-          <option>Part-time</option>
-          <option>Contract</option>
-          <option>Temporary</option>
-          <option>Freelance</option>
+          {[
+            "Full-time",
+            "Part-time",
+            "Contract",
+            "Temporary",
+            "Freelance",
+          ].map((et: string) => (
+            <option key={et} value={et}>
+              {et}
+            </option>
+          ))}
         </select>
 
-        {/* Industries */}
+        {/* Industry (require at least one) */}
         <div style={{ gridColumn: "1 / span 2" }}>
           <p style={{ margin: 0 }}>Industry (up to 3):</p>
           <div className={css.checkboxGroup}>
-            {industryOptions.map((opt) => (
+            {industryOptions.map((opt: string, idx: number) => (
               <label key={opt}>
                 <input
                   type="checkbox"
+                  name="industries"
                   checked={form.industries.includes(opt)}
-                  onChange={() => toggleArr("industries", opt)}
+                  onChange={(): void => toggleArr("industries", opt)}
+                  {...(idx === 0 ? { required: true } : {})}
                 />{" "}
                 {opt}
               </label>
@@ -146,12 +165,12 @@ export default function JobForm({
         <div style={{ gridColumn: "1 / span 2" }}>
           <p style={{ margin: 0 }}>Benefits:</p>
           <div className={css.checkboxGroup}>
-            {benefitOptions.map((b) => (
+            {benefitOptions.map((b: string) => (
               <label key={b}>
                 <input
                   type="checkbox"
                   checked={form.benefits.includes(b)}
-                  onChange={() => toggleArr("benefits", b)}
+                  onChange={(): void => toggleArr("benefits", b)}
                 />{" "}
                 {b}
               </label>
@@ -165,21 +184,22 @@ export default function JobForm({
           placeholder="Skills (comma-separated)"
           value={form.skills}
           onChange={onChange}
-          style={{ gridColumn: "1 / span 2" }}
+          required
         />
         <input
           name="url"
           placeholder="Application URL"
           value={form.url}
           onChange={onChange}
-          style={{ gridColumn: "1 / span 2" }}
+          required
         />
 
-        {/* Currency & salary */}
+        {/* Currency & Salary */}
         <select
           name="currency"
           value={form.currency}
           onChange={onChange}
+          required
         >
           <option value="" disabled>
             Choose currency
@@ -196,7 +216,6 @@ export default function JobForm({
             placeholder="Low"
             value={form.salaryLow}
             onChange={onChange}
-            style={{ flex: 1 }}
           />
           <span>–</span>
           <input
@@ -204,17 +223,16 @@ export default function JobForm({
             placeholder="High"
             value={form.salaryHigh}
             onChange={onChange}
-            style={{ flex: 1 }}
           />
         </div>
 
         {/* Opportunity type */}
         {form.experienceLevel !== "Intern" && (
           <select
-            className={css.fullWidth}
             name="type"
             value={form.type}
             onChange={onChange}
+            required
           >
             <option value="" disabled>
               Choose opportunity type
@@ -225,12 +243,13 @@ export default function JobForm({
         )}
       </div>
 
-      {/* buttons */}
       <div className={css.editActions}>
         <button
           className={`${css.button} ${css.primary}`}
           disabled={loading}
-          onClick={() => onSubmit(toPayload())}
+          onClick={(): void => {
+            onSubmit(toPayload());
+          }}
         >
           {loading ? "Saving…" : editMode ? "Save Changes" : "Add Job"}
         </button>
@@ -238,7 +257,9 @@ export default function JobForm({
           <button
             className={`${css.button} ${css.logout}`}
             disabled={loading}
-            onClick={onCancel}
+            onClick={(): void => {
+              onCancel();
+            }}
           >
             Cancel
           </button>

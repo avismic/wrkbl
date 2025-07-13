@@ -18,9 +18,9 @@ export async function POST(
     company: string;
     city: string;
     country: string;
-    "officeType": string;
-    "experienceLevel": string;
-    "employmentType": string;
+    officeType: string;
+    experienceLevel: string;
+    employmentType: string;
     industry: string | null;
     visa: number;
     benefits: string;
@@ -29,8 +29,8 @@ export async function POST(
     postedAt: number;
     remote: number;
     type: "j" | "i";
-    "salaryLow": number;
-    "salaryHigh": number;
+    salaryLow: number;
+    salaryHigh: number;
     currency: string;
   }>(
     `
@@ -52,7 +52,29 @@ export async function POST(
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  // 3) insert into `jobs`
+  // 3) required-field validation
+  const hasIndustry = Boolean(row.industry?.trim());
+  const skillsList: string[] = row.skills
+    .split(",")
+    .map((skill: string) => skill.trim()) // annotate parameter type
+    .filter((skill: string) => skill.length > 0); // annotate parameter type
+
+  const missing = {
+    title: !row.title.trim(),
+    company: !row.company.trim(),
+    industry: !hasIndustry,
+    skills: skillsList.length === 0,
+    url: !row.url.trim(),
+    type: !(row.type === "j" || row.type === "i"),
+  };
+  if (Object.values(missing).some((v) => v)) {
+    return NextResponse.json(
+      { error: "Missing required fields", missing, id: row.id },
+      { status: 400 }
+    );
+  }
+
+  // 4) insert into `jobs` with URL deduplication
   await pool.query(
     `
     INSERT INTO jobs (
@@ -70,6 +92,7 @@ export async function POST(
       $12, $13, $14,
       $15, $16, $17, $18, $19
     )
+    ON CONFLICT (url) DO NOTHING
     `,
     [
       row.id,
@@ -80,7 +103,7 @@ export async function POST(
       row.officeType,
       row.experienceLevel,
       row.employmentType,
-      row.industry,
+      row.industry ?? "",
       row.visa,
       row.benefits,
       row.skills,
@@ -94,7 +117,7 @@ export async function POST(
     ]
   );
 
-  // 4) delete it from `requests`
+  // 5) remove it from `requests`
   await pool.query(`DELETE FROM requests WHERE id = $1`, [id]);
 
   return NextResponse.json({ posted: true });

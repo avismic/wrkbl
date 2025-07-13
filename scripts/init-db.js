@@ -22,7 +22,7 @@ const { openDb } = require('../lib/db');
         visa BOOLEAN NOT NULL DEFAULT false,
         benefits TEXT NOT NULL,
         skills TEXT NOT NULL,
-        url TEXT NOT NULL,
+        url TEXT NOT NULL UNIQUE,
         "postedAt" BIGINT NOT NULL,
         remote BOOLEAN NOT NULL DEFAULT false,
         type TEXT NOT NULL DEFAULT 'j',

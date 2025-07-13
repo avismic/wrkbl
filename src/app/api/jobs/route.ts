@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
-// Define the shape of a row returned from the database
+// shape of a row returned from the database
 interface JobRow {
   id: string;
   title: string;
@@ -25,7 +25,7 @@ interface JobRow {
   currency: string;
 }
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   const pool = await openDb();
   const { rows } = await pool.query<JobRow>(`
     SELECT
@@ -56,7 +56,7 @@ export async function GET() {
     id: r.id,
     title: r.title,
     company: r.company,
-    location: `${r.city} – ${r.country}`, // legacy
+    location: `${r.city} – ${r.country}`,
     city: r.city,
     country: r.country,
     officeType: r.officeType,
@@ -80,8 +80,10 @@ export async function GET() {
   return NextResponse.json(payload);
 }
 
-export async function POST(req: NextRequest) {
-  const jobsToInsert = (await req.json()) as Array<{
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  // parse and normalize payload to array
+  const body = await req.json();
+  const jobsToInsert: Array<{
     id: string;
     title: string;
     company: string;
@@ -102,7 +104,41 @@ export async function POST(req: NextRequest) {
     salaryLow: number;
     salaryHigh: number;
     currency: string;
-  }>;
+  }> = Array.isArray(body) ? body : [body];
+
+  // 1) validate required fields
+  for (const job of jobsToInsert) {
+    const hasIndustry: boolean = Array.isArray(job.industries)
+      ? job.industries.length > 0
+      : typeof job.industries === "string"
+      ? job.industries.trim() !== ""
+      : job.industry?.trim() !== "";
+    if (
+      !job.title?.trim() ||
+      !job.company?.trim() ||
+      !hasIndustry ||
+      !Array.isArray(job.skills) ||
+      job.skills.length === 0 ||
+      !job.url?.trim() ||
+      !job.type
+    ) {
+      return NextResponse.json(
+        {
+          error: "Missing required fields",
+          missing: {
+            title: !job.title?.trim(),
+            company: !job.company?.trim(),
+            industry: !hasIndustry,
+            skills: !(Array.isArray(job.skills) && job.skills.length > 0),
+            url: !job.url?.trim(),
+            type: !job.type,
+          },
+          jobId: job.id,
+        },
+        { status: 400 }
+      );
+    }
+  }
 
   const pool = await openDb();
   const sql = `
@@ -121,7 +157,7 @@ export async function POST(req: NextRequest) {
       $12, $13, $14,
       $15, $16, $17, $18, $19
     )
-    ON CONFLICT (id) DO UPDATE SET
+    ON CONFLICT (url) DO UPDATE SET
       title            = EXCLUDED.title,
       company          = EXCLUDED.company,
       city             = EXCLUDED.city,
@@ -142,12 +178,15 @@ export async function POST(req: NextRequest) {
       currency         = EXCLUDED.currency
   `;
 
+  // 2) upsert each job
   for (const job of jobsToInsert) {
     const industryValue: string = Array.isArray(job.industries)
       ? job.industries.join(",")
       : typeof job.industries === "string"
       ? job.industries
       : job.industry ?? "";
+
+    const skillsValue: string = job.skills.join(",");
 
     const values = [
       job.id,
@@ -161,7 +200,7 @@ export async function POST(req: NextRequest) {
       industryValue,
       job.visa ? 1 : 0,
       job.benefits,
-      job.skills.join(","),
+      skillsValue,
       job.url,
       job.postedAt,
       job.remote ? 1 : 0,

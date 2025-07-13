@@ -3,12 +3,10 @@
 
 import { useState, ChangeEvent } from "react";
 import useSWR from "swr";
-// @ts-ignore: no type declarations for papaparse
-import Papa from "papaparse";
-import { v4 as uuidv4 } from "uuid";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import TrashButton from "@/components/TrashButton";
+import CsvUploadPanel from "@/components/CsvUploadPanel";
 import styles from "./AdminPageClient.module.css";
 
 interface Job {
@@ -100,80 +98,6 @@ export default function AdminPageClient() {
   });
   const visibleJobs = filtered.slice(0, visibleCount);
 
-  /* ---------------- CSV upload ---------------- */
-  const [parsedJobs, setParsedJobs] = useState<Job[]>([]);
-  const [csvError, setCsvError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const handleCsv = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return setCsvError("No file selected");
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results: { data: any[]; errors: { message: string }[] }) => {
-        const { data, errors } = results;
-        if (errors.length) {
-          setCsvError(
-            errors.map((er: { message: string }) => er.message).join("; ")
-          );
-        } else {
-          const list: Job[] = data.map((row: any) => ({
-            id:
-              uuidv4().slice(0, 4) +
-              "-" +
-              Math.floor(100 + Math.random() * 900),
-            title: row.title,
-            company: row.company,
-            city: row.city,
-            country: row.country,
-            officeType: row.officeType,
-            experienceLevel: row.experienceLevel,
-            employmentType: row.employmentType,
-            industries:
-              row.industries?.split(",").map((i: string) => i.trim()) ?? [],
-            visa: String(row.visa).toLowerCase() === "yes",
-            benefits:
-              row.benefits?.split(",").map((b: string) => b.trim()) ?? [],
-            skills: row.skills?.split(",").map((s: string) => s.trim()) ?? [],
-            url: row.url,
-            postedAt: Date.now(),
-            remote: String(row.officeType).toLowerCase().includes("remote"),
-            type:
-              String(row["j/i"]).toLowerCase() === "i"
-                ? "internship"
-                : "job",
-            currency: row.currency,
-            salaryLow: parseInt(row.salaryLow, 10) || 0,
-            salaryHigh: parseInt(row.salaryHigh, 10) || 0,
-          }));
-          setParsedJobs(list);
-          setCsvError(null);
-        }
-      },
-      error: (err: { message: string }) => setCsvError(err.message),
-    });
-  };
-
-  const uploadCsv = async () => {
-    if (!parsedJobs.length) return;
-    setUploading(true);
-    const payload = parsedJobs.map((j) => ({
-      ...j,
-      type: j.type === "internship" ? "i" : "j",
-      benefits: j.benefits.join(","),
-      industries: j.industries.join(","),
-    }));
-    await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setParsedJobs([]);
-    setUploading(false);
-    mutate();
-  };
-
   /* ---------------- Form (add / edit) ---------------- */
   const emptyForm = {
     title: "",
@@ -225,9 +149,7 @@ export default function AdminPageClient() {
     setForm(emptyForm);
   };
 
-  const onChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     setForm((f) => ({
@@ -247,7 +169,7 @@ export default function AdminPageClient() {
 
   const addJob = async () => {
     const newJob: Job = {
-      id: uuidv4().slice(0, 4) + "-" + Math.floor(100 + Math.random() * 900),
+      id: crypto.randomUUID(),
       title: form.title,
       company: form.company,
       city: form.city,
@@ -371,23 +293,7 @@ export default function AdminPageClient() {
       {/* CSV bulk upload */}
       <section className={styles.section}>
         <h2>CSV Bulk Upload</h2>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleCsv}
-          disabled={uploading}
-          className={styles.fileInput}
-        />
-        {csvError && <p className={styles.error}>{csvError}</p>}
-        {parsedJobs.length > 0 && (
-          <button
-            onClick={uploadCsv}
-            disabled={uploading}
-            className={styles.uploadBtn}
-          >
-            {uploading ? "Uploading…" : `Upload ${parsedJobs.length} Jobs`}
-          </button>
-        )}
+        <CsvUploadPanel />
       </section>
 
       {/* form */}
@@ -400,12 +306,14 @@ export default function AdminPageClient() {
             name="title"
             value={form.title}
             onChange={onChange}
+            required
           />
           <input
             placeholder="Company"
             name="company"
             value={form.company}
             onChange={onChange}
+            required
           />
 
           {/* Row 2 */}
@@ -423,7 +331,12 @@ export default function AdminPageClient() {
           />
 
           {/* Row 3 */}
-          <select name="officeType" value={form.officeType} onChange={onChange}>
+          <select
+            name="officeType"
+            value={form.officeType}
+            onChange={onChange}
+            required
+          >
             <option value="" disabled>
               Location Type (Select one)
             </option>
@@ -444,6 +357,7 @@ export default function AdminPageClient() {
                 setForm((f) => ({ ...f, type: "" }));
               }
             }}
+            required
           >
             <option value="" disabled>
               Select Experience Level
@@ -460,6 +374,7 @@ export default function AdminPageClient() {
             name="employmentType"
             value={form.employmentType}
             onChange={onChange}
+            required
           >
             <option value="" disabled>
               Select Employment Type
@@ -481,6 +396,7 @@ export default function AdminPageClient() {
                     type="checkbox"
                     checked={form.industries.includes(opt)}
                     onChange={() => toggleArray("industries", opt)}
+                    required={form.industries.length === 0}
                   />{" "}
                   {opt}
                 </label>
@@ -522,16 +438,23 @@ export default function AdminPageClient() {
             name="skills"
             value={form.skills}
             onChange={onChange}
+            required
           />
           <input
             placeholder="Application URL"
             name="url"
             value={form.url}
             onChange={onChange}
+            required
           />
 
           {/* Currency & salary */}
-          <select name="currency" value={form.currency} onChange={onChange}>
+          <select
+            name="currency"
+            value={form.currency}
+            onChange={onChange}
+            required
+          >
             <option value="" disabled>
               Choose currency
             </option>
@@ -562,7 +485,7 @@ export default function AdminPageClient() {
 
           {/* Opportunity type */}
           {form.experienceLevel !== "Intern" && (
-            <select name="type" value={form.type} onChange={onChange}>
+            <select name="type" value={form.type} onChange={onChange} required>
               <option value="" disabled>
                 Choose opportunity type
               </option>
