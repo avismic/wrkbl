@@ -1,13 +1,25 @@
 // src/app/admin/AdminPageClient.tsx
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import React, {
+  useState,
+  useMemo,
+  useRef,
+  ChangeEvent,
+  useCallback,
+} from "react";
 import useSWR from "swr";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import TrashButton from "@/components/TrashButton";
+
+import JobForm from "@/components/JobForm/JobForm";
+import BulkActionBar from "@/components/BulkActionBar";
 import CsvUploadPanel from "@/components/CsvUploadPanel";
+import TrashButton from "@/components/TrashButton";
+
 import styles from "./AdminPageClient.module.css";
+
+/* ───────── types ───────── */
 
 interface Job {
   id: string;
@@ -42,229 +54,174 @@ interface Job {
   salaryHigh: number;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+/* ───────── utils ───────── */
 
-// Fixed option lists:
-const industryOptions = [
-  "Tech",
-  "Marketing",
-  "Finance",
-  "Healthcare",
-  "Education",
-];
-const benefitOptions = [
-  "Health insurance",
-  "Paid leave",
-  "Flexible working hours",
-  "Stock options",
-];
-const currencyOptions = [
-  { code: "USD", label: "USD ($)" },
-  { code: "EUR", label: "EUR (€)" },
-  { code: "JPY", label: "JPY (¥)" },
-  { code: "GBP", label: "GBP (£)" },
-  { code: "AUD", label: "AUD (A$)" },
-  { code: "CAD", label: "CAD (C$)" },
-  { code: "CHF", label: "CHF (CHF)" },
-  { code: "CNY", label: "CNY (¥)" },
-  { code: "SEK", label: "SEK (kr)" },
-  { code: "NZD", label: "NZD (NZ$)" },
-];
+const fetcher = (u: string) => fetch(u).then((r) => r.json());
+
+/** Accepts a comma-string or string[] and returns a trimmed array */
+const normalizeSkills = (value: string | string[]): string[] =>
+  Array.isArray(value)
+    ? value
+    : value
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+/* ───────── component ───────── */
 
 export default function AdminPageClient() {
   const router = useRouter();
+  const formRef = useRef<HTMLDivElement | null>(null);
+
+  /* data */
   const {
     data: jobs = [],
     error,
-    mutate,
+    mutate: mutateJobs,
   } = useSWR<Job[]>("/api/jobs", fetcher);
-  const { data: requests = [] } = useSWR<any[]>("/api/requests", fetcher);
-  const { data: trash = [] } = useSWR<any[]>("/api/trash", fetcher);
+
+  const { data: requests = [] } = useSWR("/api/requests", fetcher);
+  const { data: trash = [] } = useSWR("/api/trash", fetcher);
+
   const pendingCount = requests.length;
   const trashCount = trash.length;
 
-  /* ---------------- Search & pagination ---------------- */
-  const [query, setQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(10);
-  const filtered = jobs.filter((j) => {
+  /* search + pagination */
+  const [query, setQuery] = useState<string>("");
+  const [visibleCount, setVisibleCount] = useState<number>(10);
+
+  const filtered = useMemo<Job[]>(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      j.title.toLowerCase().includes(q) ||
-      j.company.toLowerCase().includes(q) ||
-      `${j.city}, ${j.country}`.toLowerCase().includes(q) ||
-      j.skills.some((s) => s.toLowerCase().includes(q))
+    if (!q) return jobs;
+    return jobs.filter(
+      (j) =>
+        j.title.toLowerCase().includes(q) ||
+        j.company.toLowerCase().includes(q) ||
+        `${j.city}, ${j.country}`.toLowerCase().includes(q) ||
+        j.skills.some((s) => s.toLowerCase().includes(q))
     );
-  });
+  }, [jobs, query]);
+
   const visibleJobs = filtered.slice(0, visibleCount);
 
-  /* ---------------- Form (add / edit) ---------------- */
-  const emptyForm = {
-    title: "",
-    company: "",
-    city: "",
-    country: "",
-    officeType: "",
-    experienceLevel: "",
-    employmentType: "",
-    industries: [] as string[],
-    visa: false,
-    benefits: [] as string[],
-    skills: "",
-    url: "",
-    currency: "",
-    salaryLow: "",
-    salaryHigh: "",
-    type: "" as "job" | "internship" | "",
-  };
+  /* selection */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const startEdit = (j: Job) => {
-    setEditingId(j.id);
-    setForm({
-      title: j.title,
-      company: j.company,
-      city: j.city,
-      country: j.country,
-      officeType: j.officeType,
-      experienceLevel: j.experienceLevel,
-      employmentType: j.employmentType,
-      industries: [...j.industries],
-      visa: j.visa,
-      benefits: [...j.benefits],
-      skills: j.skills.join(", "),
-      url: j.url,
-      currency: j.currency,
-      salaryLow: String(j.salaryLow),
-      salaryHigh: String(j.salaryHigh),
-      type: j.type,
+  const toggleOne = (id: string): void =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+  const toggleAllVisible = (): void => {
+    const ids = visibleJobs.map((j) => j.id);
+    const allSelected: boolean = ids.every((id) => selected.has(id));
+    setSelected(new Set(allSelected ? [] : ids));
   };
 
-  const cancelForm = () => {
-    setEditingId(null);
-    setForm(emptyForm);
+  /* edit panel */
+  const [editing, setEditing] = useState<Job | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const scrollToForm = useCallback(() => {
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const startEdit = (job: Job): void => {
+    setEditing(job);
+    scrollToForm();
   };
 
-  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-    setForm((f) => ({
-      ...f,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const toggleArray = (key: "industries" | "benefits", val: string) => {
-    setForm((f) => {
-      const next = new Set(f[key]);
-      next.has(val) ? next.delete(val) : next.add(val);
-      if (key === "industries" && next.size > 3) return f;
-      return { ...f, [key]: Array.from(next) };
-    });
-  };
-
-  const addJob = async () => {
-    const newJob: Job = {
-      id: crypto.randomUUID(),
-      title: form.title,
-      company: form.company,
-      city: form.city,
-      country: form.country,
-      officeType: form.officeType as Job["officeType"],
-      experienceLevel: form.experienceLevel as Job["experienceLevel"],
-      employmentType: form.employmentType as Job["employmentType"],
-      industries: form.industries,
-      visa: form.visa,
-      benefits: form.benefits,
-      skills: form.skills.split(",").map((s) => s.trim()),
-      url: form.url,
-      postedAt: Date.now(),
-      remote: form.officeType.toLowerCase().includes("remote"),
-      type:
-        form.experienceLevel === "Intern"
-          ? "internship"
-          : (form.type as "job" | "internship"),
-      currency: form.currency,
-      salaryLow: parseInt(form.salaryLow, 10) || 0,
-      salaryHigh: parseInt(form.salaryHigh, 10) || 0,
-    };
+  const handleCreate = async (payload: any): Promise<void> => {
     await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify([
         {
-          ...newJob,
-          type: newJob.type === "internship" ? "i" : "j",
-          benefits: newJob.benefits.join(","),
-          industries: newJob.industries.join(","),
-        },
-      ]),
-    });
-    mutate();
-    setForm(emptyForm);
-  };
-
-  const saveEdit = async () => {
-    if (!editingId) return;
-    await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([
-        {
-          id: editingId,
-          title: form.title,
-          company: form.company,
-          city: form.city,
-          country: form.country,
-          officeType: form.officeType,
-          experienceLevel: form.experienceLevel,
-          employmentType: form.employmentType,
-          industries: form.industries.join(","),
-          visa: form.visa,
-          benefits: form.benefits.join(","),
-          skills: form.skills.split(",").map((s) => s.trim()),
-          url: form.url,
+          ...payload,
+          id: crypto.randomUUID(),
           postedAt: Date.now(),
-          remote: form.officeType.toLowerCase().includes("remote"),
+          remote: payload.officeType?.toLowerCase()?.includes("remote"),
           type:
-            form.experienceLevel === "Intern"
-              ? "i"
-              : form.type === "internship"
+            payload.experienceLevel === "Intern" ||
+            payload.type === "internship"
               ? "i"
               : "j",
-          currency: form.currency,
-          salaryLow: parseInt(form.salaryLow, 10) || 0,
-          salaryHigh: parseInt(form.salaryHigh, 10) || 0,
+          industries: payload.industries.join(","),
+          benefits: payload.benefits.join(","),
+          skills: normalizeSkills(payload.skills),
         },
       ]),
     });
-    mutate();
-    cancelForm();
+    await mutateJobs();
+    setEditing(null);
+    setSelected(new Set());
   };
 
-  const deleteJob = async (id: string) => {
+  const handleSaveEdit = async (payload: any): Promise<void> => {
+    setSavingId(payload.id);
+    await fetch("/api/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([
+        {
+          ...payload,
+          industries: payload.industries.join(","),
+          benefits: payload.benefits.join(","),
+          skills: normalizeSkills(payload.skills),
+          type: payload.type === "internship" ? "i" : "j",
+          remote: payload.officeType?.toLowerCase()?.includes("remote"),
+        },
+      ]),
+    });
+    await mutateJobs();
+    setSavingId(null);
+    setEditing(null);
+    setSelected(new Set());
+  };
+
+  /* bulk helpers */
+  const deleteSelected = async (): Promise<void> => {
+    for (const id of selected) {
+      await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+    }
+    await mutateJobs();
+    setSelected(new Set());
+  };
+
+  const reviewSelected = async (): Promise<void> => {
+    if (selected.size === 0) return;
+    await fetch("/api/review-jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [...selected] }),
+    });
+    await mutateJobs();
+    setSelected(new Set());
+  };
+
+  /* single-row delete */
+  const deleteOne = async (id: string): Promise<void> => {
     await fetch(`/api/jobs/${id}`, { method: "DELETE" });
-    mutate();
+    await mutateJobs();
   };
 
   if (error) return <p>Error loading jobs</p>;
 
-  /* ---------------- JSX ---------------- */
+  /* ───────── JSX ───────── */
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Admin Console</h1>
 
-      {/* top buttons */}
+      {/* top-right controls */}
       <div className={styles.buttonGroup}>
         <button
           onClick={() => signOut({ callbackUrl: "/admin/login" })}
           className={`${styles.button} ${styles.logout}`}
         >
-          Log out
+          Log&nbsp;out
         </button>
 
         <button
@@ -276,258 +233,68 @@ export default function AdminPageClient() {
             <span className={styles.badge}>{pendingCount}</span>
           )}
         </button>
+
         <TrashButton count={trashCount} />
       </div>
 
       {/* search */}
       <input
-        placeholder="Search jobs…"
+        className={styles.searchInput}
+        placeholder="Search title, company, location, skills…"
         value={query}
-        onChange={(e) => {
+        onChange={(e: ChangeEvent<HTMLInputElement>): void => {
           setQuery(e.target.value);
           setVisibleCount(10);
         }}
-        className={styles.searchInput}
       />
 
-      {/* CSV bulk upload */}
+      {/* CSV upload */}
       <section className={styles.section}>
-        <h2>CSV Bulk Upload</h2>
+        <h2>CSV&nbsp;Bulk&nbsp;Upload</h2>
         <CsvUploadPanel />
       </section>
 
       {/* form */}
-      <section className={`${styles.section} ${styles.card}`}>
-        <h2>{editingId ? "Edit Job" : "Add Job Manually"}</h2>
-        <div className={styles.formGrid}>
-          {/* Row 1 */}
-          <input
-            placeholder="Title"
-            name="title"
-            value={form.title}
-            onChange={onChange}
-            required
-          />
-          <input
-            placeholder="Company"
-            name="company"
-            value={form.company}
-            onChange={onChange}
-            required
-          />
+      <section ref={formRef} className={`${styles.section} ${styles.card}`}>
+        <h2>{editing ? "Edit Job" : "Add Job Manually"}</h2>
 
-          {/* Row 2 */}
-          <input
-            placeholder="City"
-            name="city"
-            value={form.city}
-            onChange={onChange}
-          />
-          <input
-            placeholder="Country"
-            name="country"
-            value={form.country}
-            onChange={onChange}
-          />
-
-          {/* Row 3 */}
-          <select
-            name="officeType"
-            value={form.officeType}
-            onChange={onChange}
-            required
-          >
-            <option value="" disabled>
-              Location Type (Select one)
-            </option>
-            <option>Remote</option>
-            <option>Hybrid</option>
-            <option>In-Office</option>
-            <option>Remote-Anywhere</option>
-          </select>
-
-          <select
-            name="experienceLevel"
-            value={form.experienceLevel}
-            onChange={(e) => {
-              onChange(e as any);
-              if (e.target.value === "Intern") {
-                setForm((f) => ({ ...f, type: "internship" }));
-              } else {
-                setForm((f) => ({ ...f, type: "" }));
-              }
-            }}
-            required
-          >
-            <option value="" disabled>
-              Select Experience Level
-            </option>
-            <option>Intern</option>
-            <option>Entry-level</option>
-            <option>Associate/Mid-level</option>
-            <option>Senior-level</option>
-            <option>Managerial</option>
-            <option>Executive</option>
-          </select>
-
-          <select
-            name="employmentType"
-            value={form.employmentType}
-            onChange={onChange}
-            required
-          >
-            <option value="" disabled>
-              Select Employment Type
-            </option>
-            <option>Full-time</option>
-            <option>Part-time</option>
-            <option>Contract</option>
-            <option>Temporary</option>
-            <option>Freelance</option>
-          </select>
-
-          {/* Industry */}
-          <div style={{ gridColumn: "1 / span 2" }}>
-            <p style={{ margin: 0 }}>Industry (up to 3):</p>
-            <div className={styles.checkboxGroup}>
-              {industryOptions.map((opt) => (
-                <label key={opt}>
-                  <input
-                    type="checkbox"
-                    checked={form.industries.includes(opt)}
-                    onChange={() => toggleArray("industries", opt)}
-                    required={form.industries.length === 0}
-                  />{" "}
-                  {opt}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Visa */}
-          <label style={{ gridColumn: "1 / span 2" }}>
-            <input
-              type="checkbox"
-              name="visa"
-              checked={form.visa}
-              onChange={onChange}
-            />{" "}
-            Visa Sponsorship Available
-          </label>
-
-          {/* Benefits */}
-          <div style={{ gridColumn: "1 / span 2" }}>
-            <p style={{ margin: 0 }}>Benefits:</p>
-            <div className={styles.checkboxGroup}>
-              {benefitOptions.map((b) => (
-                <label key={b}>
-                  <input
-                    type="checkbox"
-                    checked={form.benefits.includes(b)}
-                    onChange={() => toggleArray("benefits", b)}
-                  />{" "}
-                  {b}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Skills / URL */}
-          <input
-            placeholder="Skills (comma-separated)"
-            name="skills"
-            value={form.skills}
-            onChange={onChange}
-            required
-          />
-          <input
-            placeholder="Application URL"
-            name="url"
-            value={form.url}
-            onChange={onChange}
-            required
-          />
-
-          {/* Currency & salary */}
-          <select
-            name="currency"
-            value={form.currency}
-            onChange={onChange}
-            required
-          >
-            <option value="" disabled>
-              Choose currency
-            </option>
-            {currencyOptions.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <input
-              placeholder="Low"
-              name="salaryLow"
-              value={form.salaryLow}
-              onChange={onChange}
-              style={{ flex: 1 }}
-            />
-            <span>–</span>
-            <input
-              placeholder="High"
-              name="salaryHigh"
-              value={form.salaryHigh}
-              onChange={onChange}
-              style={{ flex: 1 }}
-            />
-          </div>
-
-          {/* Opportunity type */}
-          {form.experienceLevel !== "Intern" && (
-            <select name="type" value={form.type} onChange={onChange} required>
-              <option value="" disabled>
-                Choose opportunity type
-              </option>
-              <option value="job">Job</option>
-              <option value="internship">Internship</option>
-            </select>
-          )}
-        </div>
-
-        <div style={{ marginTop: "1rem" }}>
-          {editingId ? (
-            <>
-              <button
-                onClick={saveEdit}
-                className={`${styles.button} ${styles.primary}`}
-              >
-                Save Changes
-              </button>{" "}
-              <button
-                onClick={cancelForm}
-                className={`${styles.button} ${styles.logout}`}
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={addJob}
-              className={`${styles.button} ${styles.primary}`}
-            >
-              Add Job
-            </button>
-          )}
-        </div>
+        <JobForm
+          key={editing?.id ?? "new"} // reset internal state on edit-switch
+          initial={
+            editing
+              ? {
+                  ...editing,
+                  skills: editing.skills.join(", "),
+                  salaryLow: editing.salaryLow.toString(),
+                  salaryHigh: editing.salaryHigh.toString(),
+                  type: editing.type,
+                }
+              : undefined
+          }
+          editMode={Boolean(editing)}
+          loading={Boolean(savingId)}
+          onSubmit={editing ? handleSaveEdit : handleCreate}
+          onCancel={(): void => setEditing(null)}
+        />
       </section>
 
-      {/* Table */}
+      {/* table */}
       <section className={styles.section}>
         <h2>All Jobs</h2>
+
         <table className={styles.table}>
           <thead>
             <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={
+                    visibleJobs.length > 0 &&
+                    visibleJobs.every((j) => selected.has(j.id))
+                  }
+                  onChange={toggleAllVisible}
+                />
+              </th>
               <th>Title</th>
               <th>Company</th>
               <th>Location</th>
@@ -538,45 +305,73 @@ export default function AdminPageClient() {
           </thead>
 
           <tbody>
-            {visibleJobs.map((j) => (
-              <tr key={j.id}>
-                <td>{j.title}</td>
-                <td>{j.company}</td>
-                <td>
-                  {j.city}, {j.country}
-                </td>
-                <td>{j.experienceLevel}</td>
-                <td>{j.employmentType}</td>
-                <td className={styles.actions}>
-                  <button
-                    onClick={() => startEdit(j)}
-                    className={`${styles.button} ${styles.edit}`}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteJob(j.id)}
-                    className={`${styles.button} ${styles.delete}`}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {visibleJobs.map((j) => {
+              const busy = savingId === j.id;
+              return (
+                <tr key={j.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(j.id)}
+                      onChange={(): void => toggleOne(j.id)}
+                    />
+                  </td>
+                  <td>{j.title}</td>
+                  <td>{j.company}</td>
+                  <td>
+                    {j.city}, {j.country}
+                  </td>
+                  <td>{j.experienceLevel}</td>
+                  <td>{j.employmentType}</td>
+                  <td className={styles.actions}>
+                    <button
+                      className={`${styles.button} ${styles.edit}`}
+                      onClick={(): void => startEdit(j)}
+                      disabled={busy}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className={`${styles.button} ${styles.delete}`}
+                      onClick={() => {
+                        void deleteOne(j.id);
+                      }}
+                      disabled={busy}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+
+        {/* load more */}
+        {visibleCount < filtered.length && (
+          <div style={{ textAlign: "center", marginTop: "1rem" }}>
+            <button
+              className={styles.loadMore}
+              onClick={(): void => setVisibleCount((c) => c + 10)}
+            >
+              Load&nbsp;More
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* Load more */}
-      {visibleCount < filtered.length && (
-        <div style={{ textAlign: "center", marginTop: "1rem" }}>
-          <button
-            onClick={() => setVisibleCount((c) => c + 10)}
-            className={styles.loadMore}
-          >
-            Load More
-          </button>
-        </div>
+      {/* bulk bar */}
+      {selected.size > 0 && (
+        <BulkActionBar
+          count={selected.size}
+          onDeleteAll={() => {
+            void deleteSelected();
+          }}
+          onReviewAll={() => {
+            void reviewSelected();
+          }}
+          showPost={false} // hide “Post Selected”
+        />
       )}
     </div>
   );
