@@ -1,12 +1,13 @@
 /* src/app/page.module.css */
 
 .glassContainer {
-  backdrop-filter: blur(20px);
+  /* backdrop-filter: blur(20px); */
   border-radius: 1rem;
   max-width: 1000px;
   margin: 2rem auto;
   margin-top: 0;
   padding: 0.8rem;
+  z-index: -1;
 }
 
 .heading {

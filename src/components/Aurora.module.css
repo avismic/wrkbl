@@ -1,0 +1,15 @@
+/* src/components/Aurora.module.css */
+.container {
+  /* fill the viewport */
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 200%;
+
+  /* let users click through */
+  pointer-events: none;
+
+  /* sit above the <body> background but
+     below everything else (Header is 1000) */
+  z-index: -1;
+}
