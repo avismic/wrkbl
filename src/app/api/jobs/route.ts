@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openDb } from "@/lib/db";
 
-// shape of a row returned from the database
+/* ── DB row shape ── */
 interface JobRow {
   id: string;
   title: string;
@@ -25,29 +25,16 @@ interface JobRow {
   currency: string;
 }
 
+/* ─────────────────── GET ─────────────────── */
+
 export async function GET(): Promise<NextResponse> {
   const pool = await openDb();
   const { rows } = await pool.query<JobRow>(`
     SELECT
-      id,
-      title,
-      company,
-      city,
-      country,
-      "officeType",
-      "experienceLevel",
-      "employmentType",
-      industry,
-      visa,
-      benefits,
-      skills,
-      url,
-      "postedAt",
-      remote,
-      type,
-      "salaryLow",
-      "salaryHigh",
-      currency
+      id, title, company, city, country,
+      "officeType", "experienceLevel", "employmentType",
+      industry, visa, benefits, skills, url,
+      "postedAt", remote, type, "salaryLow", "salaryHigh", currency
     FROM jobs
     ORDER BY "postedAt" DESC
   `);
@@ -80,8 +67,9 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json(payload);
 }
 
+/* ─────────────────── POST ─────────────────── */
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // parse and normalize payload to array
   const body = await req.json();
   const jobsToInsert: Array<{
     id: string;
@@ -94,45 +82,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     employmentType: string;
     industry?: string;
     industries?: string[] | string;
-    visa: boolean;
+    visa: boolean | string; // allow string because CSV may send "true"/"false"
     benefits: string;
-    skills: string[];
+    skills: string[] | string; // allow string for CSV one-liner
     url: string;
-    postedAt: number;
-    remote: boolean;
+    postedAt: number | string;
+    remote: boolean | string;
     type: "j" | "i";
-    salaryLow: number;
-    salaryHigh: number;
+    salaryLow: number | string; // ★ widen to string
+    salaryHigh: number | string; // ★ widen to string
     currency: string;
   }> = Array.isArray(body) ? body : [body];
 
-  // 1) validate required fields
+  /* 1) validate */
   for (const job of jobsToInsert) {
-    const hasIndustry: boolean = Array.isArray(job.industries)
+    const hasIndustry = Array.isArray(job.industries)
       ? job.industries.length > 0
       : typeof job.industries === "string"
       ? job.industries.trim() !== ""
       : job.industry?.trim() !== "";
+
     if (
       !job.title?.trim() ||
       !job.company?.trim() ||
       !hasIndustry ||
-      !Array.isArray(job.skills) ||
-      job.skills.length === 0 ||
+      (!Array.isArray(job.skills) &&
+        !(typeof job.skills === "string" && job.skills.trim() !== "")) ||
+      (Array.isArray(job.skills) && job.skills.length === 0) ||
       !job.url?.trim() ||
       !job.type
     ) {
       return NextResponse.json(
         {
           error: "Missing required fields",
-          missing: {
-            title: !job.title?.trim(),
-            company: !job.company?.trim(),
-            industry: !hasIndustry,
-            skills: !(Array.isArray(job.skills) && job.skills.length > 0),
-            url: !job.url?.trim(),
-            type: !job.type,
-          },
           jobId: job.id,
         },
         { status: 400 }
@@ -140,6 +122,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
+  /* 2) upsert */
   const pool = await openDb();
   const sql = `
     INSERT INTO jobs (
@@ -169,7 +152,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       visa             = EXCLUDED.visa,
       benefits         = EXCLUDED.benefits,
       skills           = EXCLUDED.skills,
-      url              = EXCLUDED.url,
       "postedAt"         = EXCLUDED."postedAt",
       remote           = EXCLUDED.remote,
       type             = EXCLUDED.type,
@@ -178,15 +160,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       currency         = EXCLUDED.currency
   `;
 
-  // 2) upsert each job
   for (const job of jobsToInsert) {
-    const industryValue: string = Array.isArray(job.industries)
+    /* ★ SAFELY PARSE numeric fields */
+    const salaryLowInt = parseInt(String(job.salaryLow || ""), 10) || 0;
+    const salaryHighInt = parseInt(String(job.salaryHigh || ""), 10) || 0;
+    const postedAtInt = parseInt(String(job.postedAt || ""), 10) || Date.now();
+
+    const industryValue = Array.isArray(job.industries)
       ? job.industries.join(",")
       : typeof job.industries === "string"
       ? job.industries
       : job.industry ?? "";
 
-    const skillsValue: string = job.skills.join(",");
+    const skillsValue = Array.isArray(job.skills)
+      ? job.skills.join(",")
+      : job.skills;
 
     const values = [
       job.id,
@@ -198,15 +186,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       job.experienceLevel,
       job.employmentType,
       industryValue,
-      job.visa ? 1 : 0,
+      job.visa === true || job.visa === "true" ? 1 : 0,
       job.benefits,
       skillsValue,
       job.url,
-      job.postedAt,
-      job.remote ? 1 : 0,
+      postedAtInt,
+      job.remote === true || job.remote === "true" ? 1 : 0,
       job.type,
-      job.salaryLow,
-      job.salaryHigh,
+      salaryLowInt, // ★ int, never ""
+      salaryHighInt, // ★ int, never ""
       job.currency,
     ] as const;
 
