@@ -16,7 +16,7 @@
 }
 .card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 24px #4baaf3a7;
+  box-shadow: 0 0 20px 2px #4baaf3a7;
 }
 
 .card::before {
