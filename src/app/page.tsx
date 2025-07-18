@@ -107,6 +107,8 @@ export default function Page() {
     setSelectedIndustries(new Set(inds));
   }, [jobs]);
 
+  
+
   /* ────────────── helper: toggle a generic Set<string> ────────────── */
   const toggleSet = (
     value: string,
