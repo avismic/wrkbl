@@ -2,32 +2,42 @@
 
 "use client";
 
-import { useEffect } from "react"; // 1. Import useEffect
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import styles from "./page.module.css";
-import { hyperspeedPresets } from "../../components/hyperSpeedPresets";
 
+// Dynamically import the new components to ensure they only run on the client
+const RotatingText = dynamic(
+  () => import("../../components/RotatingText").then((mod) => mod.default),
+  { ssr: false }
+);
+const GradientText = dynamic(
+  () => import("../../components/GradientText").then((mod) => mod.default),
+  { ssr: false }
+);
+
+// We need to dynamically import the Hyperspeed component as well
 const Hyperspeed = dynamic(
   () => import("../../components/HyperSpeed").then((mod) => mod.default),
   { ssr: false }
 );
 
-export default function SolutionsPage() {
-  // 2. Add the useEffect hook
-  useEffect(() => {
-    // Set the background color when the component mounts
-    document.body.style.backgroundColor = "#000000"; // Black background
 
-    // Cleanup function to reset the style when the component unmounts
+export default function SolutionsPage() {
+  useEffect(() => {
+    // Set a dark background for this page specifically
+    document.body.style.backgroundColor = "#0a0a0a";
+    // Clean up when the component unmounts
     return () => {
       document.body.style.backgroundColor = "";
     };
-  }, []); // The empty array ensures this runs only once on mount and cleanup
+  }, []);
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center p-24 text-center">
+    <main className="relative">
+      {/* Background Effect Container */}
       <div className={styles.backgroundContainer}>
-        <Hyperspeed
+         <Hyperspeed
           effectOptions={{
             onSpeedUp: () => {},
             onSlowDown: () => {},
@@ -68,13 +78,54 @@ export default function SolutionsPage() {
         />
       </div>
 
-      <div className="z-10">
-        <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-lg">
-          Hyperspeed Solutions
-        </h1>
-        <p className="mt-4 text-lg text-gray-300 drop-shadow-md">
-          Click and hold anywhere to see the magic!
-        </p>
+      {/* Content Wrapper with higher z-index and constrained width */}
+      <div className={`${styles.container} relative z-10`}>
+        {/* Hero Section */}
+        <section className={styles.hero}>
+          <h1 className={styles.heroTitle}>
+            We Build Your Entire Talent Pipeline, from
+            <RotatingText
+              texts={["Careers Page", "First Hire", "ATS Setup", "Onboarding"]}
+              mainClassName={styles.rotatingTextMain}
+              splitLevelClassName={styles.rotatingTextSplit}
+            />
+          </h1>
+          <p className={styles.heroSubtitle}>
+            Stop searching for candidates. Start building a world-class team with our end-to-end talent acquisition solutions.
+          </p>
+          <button className={styles.ctaButton}>Book a Consultation</button>
+        </section>
+
+        {/* Services Section */}
+        <section className={styles.services}>
+          <div className={styles.serviceCard}>
+            <GradientText className={styles.gradientTitle}>
+              Employer Branding
+            </GradientText>
+            <p>
+              We design and build stunning, high-performance careers pages that
+              attract top-tier talent and showcase your company culture.
+            </p>
+          </div>
+          <div className={styles.serviceCard}>
+            <GradientText className={styles.gradientTitle}>
+              Active Sourcing
+            </GradientText>
+            <p>
+              Our team becomes your team. We actively source, vet, and interview
+              candidates, presenting you with a shortlist of the best fits.
+            </p>
+          </div>
+          <div className={styles.serviceCard}>
+            <GradientText className={styles.gradientTitle}>
+              Process Automation
+            </GradientText>
+            <p>
+              From Applicant Tracking System (ATS) implementation to automated
+              onboarding workflows, we streamline your entire hiring process.
+            </p>
+          </div>
+        </section>
       </div>
     </main>
   );
