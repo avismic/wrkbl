@@ -20,6 +20,9 @@ export default function AuroraGate(props: AuroraProps): ReactElement | null {
   if (pathname.startsWith("/admin")) {
     return null;
   }
+  if (pathname.startsWith("/solutions")) {
+    return null;
+  }
 
   return <Aurora {...props} />;
 }
