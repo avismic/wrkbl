@@ -36,7 +36,8 @@ export const hyperspeedPresets = {
       sticks: 0x03b3c3,
     },
   },
-  two: {
+  two: 
+  {
     onSpeedUp: () => {},
     onSlowDown: () => {},
     distortion: "mountainDistortion",

@@ -1,40 +1,29 @@
 /* src/components/ListingCard.module.css */
+
 .card {
   display: block;
   padding: 1.5rem;
-  background: #f9f9f9;
-  border-radius: 0.75rem;
-  margin-bottom: 1.25rem;
   text-decoration: none;
-  color: #333;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  border: solid;
-  border-width: 0.12rem;
-  border-color: #4baaf3c8;
-}
-.card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 0 20px 2px #4baaf3a7;
+  position: relative; /* Crucial for positioning pseudo-elements */
+  overflow: hidden;  /* Crucial for containing the effects */
+  border-radius: 0.75rem;
+  color: #f0f0f0;
+
+  /* --- Glassmorphism Properties --- */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  transition: transform 0.3s ease, background 0.3s ease;
 }
 
-.card::before {
-  content: "";
-  position: absolute;
-  top: var(--y);
-  left: var(--x);
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at center, #4baaf365 0%, transparent 80%);
-  transform: translate(-50%, -50%);
-  transition: width 0.2s ease, height 0.2s ease;
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+  background: rgba(255, 255, 255, 0.15);
 }
-.card:hover::before {
-  width: 100%;
-  height: 200%;
-}
+
+/* --- UPDATE COLORS FOR CHILD ELEMENTS (No changes here) --- */
 
 .meta {
   display: flex;
@@ -45,7 +34,7 @@
 }
 
 .jobType {
-  background-color: #2a9d8f;
+  background-color: rgba(42, 157, 143, 0.8);
   color: white;
   padding: 0.2rem 0.6rem;
   border-radius: 0.25rem;
@@ -54,13 +43,14 @@
 }
 
 .postedAt {
-  color: #777;
+  color: #c7c7c7;
 }
 
 .title {
   margin: 0 0 0.5rem;
   font-size: 1.5rem;
   line-height: 1.2;
+  color: #ffffff;
 }
 
 .sub {
@@ -68,7 +58,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #555;
+  color: #dcdcdc;
   margin-bottom: 1rem;
 }
 
@@ -77,7 +67,7 @@
 }
 
 .location {
-  color: #888;
+  color: #b0b0b0;
 }
 
 .badges {
@@ -88,17 +78,18 @@
 }
 
 .badge {
-  background: #e0e0e0;
-  color: #333;
+  background: rgba(255, 255, 255, 0.15);
+  color: #f0f0f0;
   padding: 0.3rem 0.6rem;
   border-radius: 0.3rem;
   font-size: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .salary {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #2a9d8f;
+  color: #a7f3d0;
   margin-bottom: 1rem;
 }
 
@@ -109,9 +100,65 @@
 }
 
 .chip {
-  background: #99a7b6;
+  background: rgba(153, 167, 182, 0.5);
   color: white;
   padding: 0.3rem 0.6rem;
   font-size: 0.75rem;
   border-radius: 0.3rem;
+}
+
+
+/* ================================================================ */
+/* COMBINED HOVER & MOUSE-MOVE EFFECTS                              */
+/* ================================================================ */
+
+/* --- 1. The Spotlight Effect (follows the mouse) using ::before --- */
+.card::before {
+  content: "";
+  position: absolute;
+  /* These CSS variables are set by the JavaScript onMouseMove */
+  top: var(--y, 0);
+  left: var(--x, 0);
+
+  width: 0;
+  height: 0;
+  /* A multi-layered gradient for a higher-quality, softer glow */
+  background: 
+    radial-gradient(circle at center, rgba(75, 170, 243, 0.4) 0%, transparent 25%),
+    radial-gradient(circle at center, rgba(75, 170, 243, 0.2) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  /* Slower transition for a smoother feel */
+  transition: width 0.4s ease, height 0.4s ease;
+  pointer-events: none; /* Make sure it doesn't block mouse events */
+}
+
+/* On hover, the spotlight expands */
+.card:hover::before {
+  width: 100%;
+  height: 200%;
+}
+
+
+/* --- 2. The "Liquidy" Sheen Effect using ::after --- */
+.card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 60%
+  );
+  /* The transition for the sheen effect */
+  transition: left 3.5s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none; /* Make sure it doesn't block mouse events */
+}
+
+/* On hover, the sheen sweeps across the card */
+.card:hover::after {
+  left: 150%;
 }

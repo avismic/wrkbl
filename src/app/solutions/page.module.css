@@ -1,15 +1,19 @@
-/* In app/globals.css */
+/* src/app/solutions/page.module.css */
 
-#lights {
+.backgroundContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  position: absolute;
-  /* Add a z-index to ensure it stays in the background */
-  z-index: 5; 
+  z-index: 0; /* Places it behind the text content */
 }
 
-.canvas {
+/* Use :global() to style the #lights div rendered by the
+  HyperSpeed component from within this CSS module.
+*/
+.backgroundContainer :global(#lights),
+.backgroundContainer :global(canvas) {
   width: 100%;
   height: 100%;
 }
