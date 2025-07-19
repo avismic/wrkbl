@@ -1,35 +1,28 @@
 // src/app/api/consultation/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { openDb } from "@/lib/db";
+// --- 1. This import is correct ---
+import { pool } from "@/lib/db";
 
-// This line explicitly tells Next.js to treat this route as dynamic,
-// bypassing any and all data caching for GET requests.
+// This line forces the route to be dynamic, which is correct.
 export const dynamic = "force-dynamic";
 
-// GET handler to fetch all consultation requests for the admin panel
-// By adding the `request` parameter, we ensure this function is always
-// treated as dynamic by the Next.js server.
 export async function GET(request: NextRequest) {
   try {
-    const pool = await openDb();
+    // This GET function is already correct.
     const { rows } = await pool.query(
       `SELECT id, name, company, email, message, "submittedAt" 
        FROM consultations 
        ORDER BY "submittedAt" DESC`
     );
 
-    const headers = {
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      Pragma: "no-cache",
-      Expires: "0",
-    };
+    console.log("API fetched consultations:", rows);
 
-    return NextResponse.json(rows, { headers });
+    return NextResponse.json(rows);
   } catch (error) {
     console.error("Failed to fetch consultations:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: (error as Error).message },
       { status: 500 }
     );
   }
@@ -47,7 +40,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const pool = await openDb();
+    // --- 2. THIS IS THE FIX ---
+    // We now use the imported 'pool' directly, just like in the GET function.
+    // This ensures the data is correctly inserted into the database.
     const sql = `
       INSERT INTO consultations (name, company, email, message) 
       VALUES ($1, $2, $3, $4)
@@ -62,7 +57,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Failed to submit consultation:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: (error as Error).message },
       { status: 500 }
     );
   }

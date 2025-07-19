@@ -34,25 +34,24 @@ export default function ConsultationModal({ onClose }: ConsultationModalProps) {
     setStatus("sending");
     setError(null);
 
-    // Basic validation
-    if (!formData.name || !formData.email || !formData.company) {
+    // --- THIS IS THE FIX ---
+    // We need to check the properties on the formData object.
+    if (!formData.name || !formData.company || !formData.email) {
       setError("Please fill out all required fields.");
       setStatus("error");
       return;
     }
 
     try {
-      // NOTE: You would create this API endpoint to handle the form submission
-      // For now, we'll simulate a successful submission.
-      console.log("Submitting form data:", formData);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-      
-      // const response = await fetch('/api/consultation', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-      // if (!response.ok) throw new Error('Something went wrong.');
+      const response = await fetch("/api/consultation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok.");
+      }
 
       setStatus("sent");
     } catch (err) {
@@ -84,13 +83,17 @@ export default function ConsultationModal({ onClose }: ConsultationModalProps) {
         {status === "sent" ? (
           <div className={styles.successMessage}>
             <h2>Thank You!</h2>
-            <p>Your consultation request has been sent. We'll be in touch shortly.</p>
+            <p>
+              Your consultation request has been sent. We'll be in touch
+              shortly.
+            </p>
           </div>
         ) : (
           <>
             <h2>Book a Consultation</h2>
             <p className={styles.intro}>
-              Let's build your talent engine. Tell us a bit about your company and needs.
+              Let's build your talent engine. Tell us a bit about your company
+              and needs.
             </p>
             <form onSubmit={handleSubmit} className={styles.form}>
               <div className={styles.inputGroup}>

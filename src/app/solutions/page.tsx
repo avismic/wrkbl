@@ -87,7 +87,7 @@ export default function SolutionsPage() {
               className={styles.ctaButton}
               onClick={() => setIsModalOpen(true)}
             >
-              Build My Hiring Engine
+              Book a free consultation!
             </button>
           </section>
 
@@ -140,7 +140,7 @@ export default function SolutionsPage() {
                 <p>
                   We build your entire operational backbone. This includes
                   implementing the perfect ATS, automating workflows, and even
-                  developing **custom interview tools** to ensure you identify
+                  developing custom interview tools to ensure you identify
                   the right skills, every time.
                 </p>
               </div>
