@@ -79,9 +79,9 @@ export default function SolutionsPage() {
             </h1>
             <p className={styles.heroSubtitle}>
               Forget the endless sourcing, messy spreadsheets, and unqualified
-              candidates. We build and manage your entire hiring ecosystem, from
-              your careers page to your next great hire, so you can focus on
-              growth.
+              candidates. We build and automate your entire hiring ecosystem,
+              from your careers page to your next great hire, so you can focus
+              on growth.
             </p>
             <button
               className={styles.ctaButton}
@@ -98,8 +98,8 @@ export default function SolutionsPage() {
             </h2>
             <div className={styles.problemList}>
               <p>
-                <strong>Wasted Hours:</strong> Are your best people spending more
-                time sifting through resumes than doing their actual jobs?
+                <strong>Wasted Hours:</strong> Are your best people spending
+                more time sifting through resumes than doing their actual jobs?
               </p>
               <p>
                 <strong>Lost Candidates:</strong> Is a slow, clunky process
@@ -121,18 +121,19 @@ export default function SolutionsPage() {
               <div className={styles.serviceCard}>
                 <h4>Become a Talent Magnet</h4>
                 <p>
-                  We don't just build careers pages; we build your employer brand.
-                  We'll create a stunning, magnetic destination that tells your
-                  story and converts top-tier visitors into passionate applicants.
+                  We don't just build careers pages; we build your employer
+                  brand. We'll create a stunning, magnetic destination that
+                  tells your story and converts top-tier visitors into
+                  passionate applicants.
                 </p>
               </div>
               <div className={styles.serviceCard}>
                 <h4>Your Elite Talent Scouts</h4>
                 <p>
-                  Our expert team becomes an extension of yours. We go beyond job
-                  boards to actively source, vet, and engage with passive
-                  candidates, delivering a pre-qualified shortlist directly to
-                  you.
+                  Our expert team becomes an extension of yours. We go beyond
+                  job boards to help you actively source, vet, and engage with
+                  passive candidates, getting you a pre-qualified shortlist
+                  directly.
                 </p>
               </div>
               <div className={styles.serviceCard}>
@@ -140,8 +141,8 @@ export default function SolutionsPage() {
                 <p>
                   We build your entire operational backbone. This includes
                   implementing the perfect ATS, automating workflows, and even
-                  developing custom interview tools to ensure you identify
-                  the right skills, every time.
+                  developing custom interview tools to ensure you identify the
+                  right skills, every time. Everything customized to your needs.
                 </p>
               </div>
             </div>
@@ -153,14 +154,22 @@ export default function SolutionsPage() {
               <GradientText>Your Custom Interview Toolkit</GradientText>
             </h2>
             <p className={styles.featureText}>
-              Standard interviews are broken. We build bespoke, role-specific interview platforms and technical assessments for your company. Imagine this: Instead of a simple video call, your candidates are in a collaborative coding environment tailored to your tech stack. Instead of guessing culture fit, you have structured, data-driven interview modules. This is how you stop guessing and start hiring with confidence.
+              Standard interviews are broken. We build bespoke, role-specific
+              interview platforms and technical assessments for your company.
+              Imagine this: Instead of a simple video call, your candidates are
+              in a collaborative coding environment tailored to your tech stack.
+              Instead of guessing culture fit, you have structured, data-driven
+              interview modules. This is how you stop guessing and start hiring
+              with confidence.
             </p>
           </section>
         </div>
       </main>
 
       <AnimatePresence>
-        {isModalOpen && <ConsultationModal onClose={() => setIsModalOpen(false)} />}
+        {isModalOpen && (
+          <ConsultationModal onClose={() => setIsModalOpen(false)} />
+        )}
       </AnimatePresence>
     </>
   );
