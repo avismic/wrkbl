@@ -1,43 +1,35 @@
 /* src/app/how-to-use/page.module.css */
-
 .container {
-  max-width: 700px;
+  max-width: 1000px; /* Changed from 700px */
   margin: 2rem auto;
   padding: 1rem;
-  
 }
-
 .container h1 {
   text-align: center;
   font-size: 2.5rem;
   margin-bottom: 1.5rem;
   color: var(--foreground);
 }
-
 .steps {
   list-style: none;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  
 }
-
 .step {
-  background: #f9f9f9;
+  background: rgba(23, 23, 23, 0.2); /* Dark background */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
   border-radius: 0.5rem;
   padding: 1rem;
-  box-shadow: 0 12px 24px #4baaf3a7;
 }
-
 .step h2 {
   margin: 0 0 0.5rem;
   font-size: 1.25rem;
-  color: black;
+  color: #ffffff; /* White text */
 }
-
 .step p {
   margin: 0;
-  color: rgb(80, 80, 80);
+  color: #d1d5db; /* Light gray text */
 }

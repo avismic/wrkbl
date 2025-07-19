@@ -1,43 +1,32 @@
 .container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 2rem auto;
   padding: 2rem;
-  background: #f9f9f9;
-  backdrop-filter: blur(10px);
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  color: #171717;
-  box-shadow: 0 12px 24px #4baaf3a7;
+  color: #e0e0e0;
+  background-color: rgba(23, 23, 23, 0.2); /* Dark background */
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-.papacontainer {
-  max-width: 800px;
-}
-
 .heading {
   margin-top: 0;
   font-size: 2rem;
   text-align: center;
-  color: #004aad;
+  color: #ffffff; /* White text */
 }
-
 .content {
   margin-top: 1rem;
   line-height: 1.6;
   font-size: 1rem;
 }
-
 .subheading {
   margin-top: 1.5rem;
   font-size: 1.25rem;
-  color: #004aad;
+  color: #4baaf3; /* Keep brand color for subheadings */
 }
-
-/* .a {
-  color: #4baaf3;
+.content a {
+  color: #69c1ff;
   text-decoration: none;
 }
-
-.a:hover {
+.content a:hover {
   text-decoration: underline;
-} */
+}

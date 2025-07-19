@@ -1,65 +1,54 @@
 /* src/app/work-with-us/page.module.css */
-
 .container {
-  max-width: 85%;
+  max-width: 1000px;
   margin: 2rem auto;
   padding: 1.5rem;
-  background: #f9f9f9;
-  backdrop-filter: blur(10px);
+  background: rgba(23, 23, 23, 0.8); /* Dark background */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
-  color: rgb(0, 0, 0);
-  box-shadow: 0 12px 24px #4baaf3a7;
+  color: #e0e0e0;
 }
-
 .container h1 {
   text-align: center;
   margin-bottom: 1rem;
   font-size: 2rem;
-  color: black;
+  color: #ffffff;
 }
-
 .intro {
   text-align: center;
   margin-bottom: 1.5rem;
-  color: var(--foreground-secondary);
+  color: #d1d5db;
 }
-
 .error {
   color: #c0392b;
   margin-bottom: 1rem;
   text-align: center;
 }
-
 .form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  color: black;
 }
-
 .container label {
   display: flex;
   flex-direction: column;
   font-size: 0.95rem;
-  color: var(--foreground);
-  color: black;
+  color: #d1d5db;
 }
-
 .container input[type="text"],
 .container input[type="email"],
 .container textarea {
   margin-top: 0.25rem;
   padding: 0.5rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.25rem;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
-
 .fileInput input[type="file"] {
   margin-top: 0.5rem;
 }
-
 .submitBtn {
   margin-top: 1rem;
   padding: 0.75rem;
@@ -71,12 +60,10 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-
 .submitBtn:disabled {
   opacity: 0.6;
   cursor: default;
 }
-
 .submitBtn:not(:disabled):hover {
   background-color: #379ed8;
 }

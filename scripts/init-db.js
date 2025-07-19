@@ -1,13 +1,13 @@
 // scripts/init-db.js
-require('dotenv').config();
-const { openDb } = require('../lib/db');
+require("dotenv").config();
+const { openDb } = require("../lib/db");
 
 (async () => {
   try {
     const pool = await openDb();
 
     // ─── jobs table ────────────────────────────────────────────────
-    await pool.query('DROP TABLE IF EXISTS jobs;');
+    await pool.query("DROP TABLE IF EXISTS jobs;");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS jobs (
         id TEXT PRIMARY KEY,
@@ -31,10 +31,10 @@ const { openDb } = require('../lib/db');
         currency TEXT NOT NULL DEFAULT '$'
       );
     `);
-    console.log('✅ jobs table initialized with all new fields');
+    console.log("✅ jobs table initialized with all new fields");
 
     // ─── requests table ────────────────────────────────────────────
-    await pool.query('DROP TABLE IF EXISTS requests;');
+    await pool.query("DROP TABLE IF EXISTS requests;");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS requests (
         id TEXT PRIMARY KEY,
@@ -58,7 +58,21 @@ const { openDb } = require('../lib/db');
         currency TEXT NOT NULL DEFAULT '$'
       );
     `);
-    console.log('✅ requests table initialized with all new fields');
+    console.log("✅ requests table initialized with all new fields");
+
+    // --- NEW: consultations table ---
+    await pool.query("DROP TABLE IF EXISTS consultations;");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS consultations (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        company TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT,
+        "submittedAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    console.log("✅ consultations table initialized");
 
     process.exit(0);
   } catch (err) {

@@ -82,9 +82,11 @@ export default function AdminPageClient() {
 
   const { data: requests = [] } = useSWR("/api/requests", fetcher);
   const { data: trash = [] } = useSWR("/api/trash", fetcher);
+  const { data: consultations = [] } = useSWR("/api/consultation", fetcher);
 
   const pendingCount = requests.length;
   const trashCount = trash.length;
+  const consultationCount = consultations.length;
 
   /* search + pagination */
   const [query, setQuery] = useState<string>("");
@@ -231,6 +233,18 @@ export default function AdminPageClient() {
           Requests
           {pendingCount > 0 && (
             <span className={styles.badge}>{pendingCount}</span>
+          )}
+        </button>
+
+        {/* --- NEW: Consultation Button --- */}
+        <button
+          onClick={() => router.push("/admin/consult-req")}
+          className={`${styles.button} ${styles.primary}`}
+          style={{ background: "#9b59b6" }} // A different color
+        >
+          Consultations
+          {consultationCount > 0 && (
+            <span className={styles.badge}>{consultationCount}</span>
           )}
         </button>
 
