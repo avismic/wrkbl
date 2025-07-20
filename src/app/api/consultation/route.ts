@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     // This GET function is already correct.
     const { rows } = await pool.query(
-      `SELECT id, name, company, email, message, "submittedAt" 
+      `SELECT id, name, company, email, message, status, "submittedAt" 
        FROM consultations 
        ORDER BY "submittedAt" DESC`
     );
@@ -58,6 +58,48 @@ export async function POST(req: NextRequest) {
     console.error("Failed to submit consultation:", error);
     return NextResponse.json(
       { error: "Internal Server Error", details: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+// Add these two functions to the end of src/app/api/consultation/route.ts
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { ids } = await req.json();
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: "No IDs provided" }, { status: 400 });
+    }
+    const result = await pool.query(
+      `UPDATE consultations SET status = 'done' WHERE id = ANY($1::int[])`,
+      [ids]
+    );
+    return NextResponse.json({ success: true, count: result.rowCount });
+  } catch (error) {
+    console.error("Failed to update consultations:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { ids } = await req.json();
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: "No IDs provided" }, { status: 400 });
+    }
+    const result = await pool.query(
+      `DELETE FROM consultations WHERE id = ANY($1::int[])`,
+      [ids]
+    );
+    return NextResponse.json({ success: true, count: result.rowCount });
+  } catch (error) {
+    console.error("Failed to delete consultations:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -11,7 +11,7 @@ interface Props {
   /** called when all selected rows should be deleted */
   onDeleteAll: () => void | Promise<void>;
   /** called when Gemini review should run on all selected rows */
-  onReviewAll: () => void | Promise<void>;
+  onReviewAll?: () => void | Promise<void>;
   /** disable all buttons + show progress */
   disabled?: boolean;
   /** current progress (0 – total) */
@@ -20,6 +20,8 @@ interface Props {
   total?: number;
   /** hide the “Post Selected” button (defaults to false) */
   showPost?: boolean;
+  showReview?: boolean;
+  postButtonText?: string;
 }
 
 export default function BulkActionBar({
@@ -31,16 +33,19 @@ export default function BulkActionBar({
   progress = 0,
   total = 0,
   showPost = true,
+  showReview = true,
+  postButtonText = `Post Selected (${count})`,
 }: Props) {
   return (
     <div className={styles.bar}>
-      {showPost && (
+      {showPost && onPostAll && (
         <button
           className={`${styles.button} ${styles.primary}`}
           onClick={onPostAll}
           disabled={disabled}
         >
-          Post&nbsp;Selected&nbsp;({count})
+          {/* This now uses your custom text prop */}
+          {postButtonText}
         </button>
       )}
 
@@ -52,21 +57,20 @@ export default function BulkActionBar({
         Delete&nbsp;Selected&nbsp;({count})
       </button>
 
-      <button
-        className={`${styles.button} ${styles.review}`}
-        onClick={onReviewAll}
-        disabled={disabled}
-      >
-        Gemini&nbsp;Review&nbsp;Selected&nbsp;({count})
-      </button>
+      {/* This button is now hidden when showReview is false */}
+      {showReview && onReviewAll && (
+        <button
+          className={`${styles.button} ${styles.review}`}
+          onClick={onReviewAll}
+          disabled={disabled}
+        >
+          Gemini&nbsp;Review&nbsp;Selected&nbsp;({count})
+        </button>
+      )}
 
       {disabled && total > 0 && (
         <div className={styles.progressWrapper}>
-          <progress
-            className={styles.progress}
-            value={progress}
-            max={total}
-          />
+          <progress className={styles.progress} value={progress} max={total} />
           <span className={styles.progressText}>
             {progress}/{total}
           </span>

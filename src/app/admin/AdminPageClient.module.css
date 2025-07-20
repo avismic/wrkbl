@@ -259,3 +259,13 @@
 .loadMore:hover {
   opacity: 0.9;
 }
+
+/* Style for completed rows */
+.doneRow {
+  background-color: #1a3a1a; /* A subtle dark green */
+  color: #8f8f8f; /* Dim the text color */
+}
+
+.doneRow:hover {
+  background-color: #2a4a2a !important; /* A slightly lighter green on hover */
+}

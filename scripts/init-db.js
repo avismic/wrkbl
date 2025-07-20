@@ -69,6 +69,7 @@ const { openDb } = require("../lib/db");
         company TEXT NOT NULL,
         email TEXT NOT NULL,
         message TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
         "submittedAt" TIMESTAMPTZ DEFAULT NOW()
       );
     `);
