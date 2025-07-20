@@ -50,8 +50,8 @@ export default function RootLayout({
         <AuroraGate
           colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
           blend={2}
-          amplitude={2}
-          speed={4}
+          amplitude={0.8}
+          speed={3}
         />
 
         {/* ――― site chrome ――― */}

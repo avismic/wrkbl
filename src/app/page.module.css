@@ -129,7 +129,7 @@
   display: block;
   margin-bottom: 0.25rem;
   font-size: 0.875rem;
-  color: black;
+  color: white;
 
   /* ← added: allow wrapping here as well */
   white-space: normal;

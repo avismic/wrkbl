@@ -217,7 +217,7 @@ export default function Page() {
       <div className={styles.searchContainer}>
         <input
           type="text"
-          placeholder="Search by title or company…"
+          placeholder="Search by title or company or skills or location…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className={styles.searchInput}

@@ -7,7 +7,7 @@ const { openDb } = require("../lib/db");
     const pool = await openDb();
 
     // ─── jobs table ────────────────────────────────────────────────
-    await pool.query("DROP TABLE IF EXISTS jobs;");
+    // await pool.query("DROP TABLE IF EXISTS jobs;");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS jobs (
         id TEXT PRIMARY KEY,
@@ -34,7 +34,7 @@ const { openDb } = require("../lib/db");
     console.log("✅ jobs table initialized with all new fields");
 
     // ─── requests table ────────────────────────────────────────────
-    await pool.query("DROP TABLE IF EXISTS requests;");
+    // await pool.query("DROP TABLE IF EXISTS requests;");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS requests (
         id TEXT PRIMARY KEY,
@@ -61,7 +61,7 @@ const { openDb } = require("../lib/db");
     console.log("✅ requests table initialized with all new fields");
 
     // --- NEW: consultations table ---
-    await pool.query("DROP TABLE IF EXISTS consultations;");
+    // await pool.query("DROP TABLE IF EXISTS consultations;");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS consultations (
         id SERIAL PRIMARY KEY,
