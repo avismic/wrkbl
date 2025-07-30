@@ -1,0 +1,132 @@
+/* src/app/donate/page.module.css */
+
+.container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  /* padding: 2rem; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+}
+
+.contentCard {
+  width: 100%;
+  max-width: 1000px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  color: #e0e0e0;
+  background-color: rgba(23, 23, 23, 0.2); /* Dark background */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.heading {
+  margin: 0 0 1rem 0;
+  font-size: 2.5rem;
+  text-align: center;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.intro {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  color: #d1d5db;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.donationBox {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.qrSide, .upiSide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.subheading {
+  font-size: 1.25rem;
+  color: #4baaf3; /* Brand color for emphasis */
+  margin: 0 0 1rem 0;
+}
+
+.qrPlaceholder {
+  width: 200px;
+  height: 200px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  color: #a0a0a0;
+  font-size: 1.2rem;
+}
+
+.upiIdBox {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upiId {
+  font-family: var(--font-geist-mono);
+  font-size: 1.2rem;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.icon {
+  color: #a0a0a0;
+}
+
+.supportNote {
+  font-size: 0.95rem;
+  color: #c7c7c7;
+  line-height: 1.5;
+}
+
+.footerText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-top: 2rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .donationBox {
+    flex-direction: column;
+  }
+  .contentCard {
+    padding: 1.5rem;
+  }
+  .heading {
+    font-size: 2rem;
+  }
+  .intro {
+    font-size: 1rem;
+  }
+}

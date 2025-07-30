@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import styles from './Header.module.css';
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import styles from "./Header.module.css";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,11 +24,14 @@ export default function Header() {
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
           >
-            {menuOpen ? '✕' : '☰'}
+            {menuOpen ? "✕" : "☰"}
           </button>
 
           {/* Nav links */}
-          <nav className={`${styles.nav} ${menuOpen ? styles.navActive : ''}`}>
+          <nav className={`${styles.nav} ${menuOpen ? styles.navActive : ""}`}>
+            <Link href="/donate" onClick={() => setMenuOpen(false)}>
+              Donate
+            </Link>
             <Link href="/about" onClick={() => setMenuOpen(false)}>
               About
             </Link>

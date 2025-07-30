@@ -33,6 +33,14 @@ const { openDb } = require("../lib/db");
     `);
     console.log("✅ jobs table initialized with all new fields");
 
+    // 🚀 Speed up “latest jobs” queries
+    await pool.query(`
+    -- NB: CONCURRENTLY allows the index to build without locking writes
+    CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_jobs_postedAt_desc
+    ON jobs ("postedAt" DESC);
+    `);
+    console.log("✅ idx_jobs_postedAt_desc created (or already exists)");
+
     // ─── requests table ────────────────────────────────────────────
     // await pool.query("DROP TABLE IF EXISTS requests;");
     await pool.query(`
